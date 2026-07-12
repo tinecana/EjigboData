@@ -1,0 +1,3306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>PWMS - Political Ward Management System</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --primary:#0B3D91;
+  --primary-2:#072b66;
+  --gold:#D4AF37;
+  --success:#16a34a;
+  --warning:#f59e0b;
+  --danger:#dc2626;
+  --bg:#f5f7fb;
+  --surface:#ffffff;
+  --surface-2:#f8fafc;
+  --text:#111827;
+  --muted:#64748b;
+  --border:#e2e8f0;
+  --shadow:0 18px 50px rgba(15,23,42,.08);
+  --radius:8px;
+}
+
+[data-theme="dark"]{
+  --bg:#07111f;
+  --surface:#0f1d33;
+  --surface-2:#13243d;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --border:#26364f;
+  --shadow:0 18px 50px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{padding:0;line-height:1.5}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+.app-shell{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+.sidebar{background:linear-gradient(180deg,var(--primary),var(--primary-2));color:white;padding:18px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.logo{width:44px;height:44px;border-radius:8px;background:white;color:var(--primary);display:grid;place-items:center;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.16)}
+.brand h1{font-size:1rem;margin:0;font-weight:900}
+.brand p{margin:2px 0 0;font-size:.72rem;opacity:.8}
+
+.nav-group{display:grid;gap:6px}
+.nav-btn{width:100%;border:0;background:transparent;color:rgba(255,255,255,.78);display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:8px;text-align:left;font-weight:800}
+.nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.14);color:white}
+.nav-icon{width:24px;text-align:center}
+
+.sidebar-footer{margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,.18);display:grid;gap:10px}
+.user-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:12px}
+.user-pill strong{display:block}
+.user-pill span{font-size:.78rem;opacity:.82}
+
+.main{min-width:0}
+.topbar{height:72px;background:rgba(255,255,255,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50}
+[data-theme="dark"] .topbar{background:rgba(15,29,51,.88)}
+.page-title{display:flex;align-items:center;gap:12px}
+.page-title h2{margin:0;font-size:1.15rem}
+.page-title p{margin:2px 0 0;color:var(--muted);font-size:.78rem}
+.top-actions{display:flex;gap:8px;align-items:center}
+
+.content{padding:24px;max-width:1440px;margin:0 auto}
+.page{display:none;animation:fadeIn .22s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.grid{display:grid;gap:16px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.card.compact{padding:14px}
+.card-title{margin:0 0 12px;font-size:.95rem;font-weight:900}
+.muted{color:var(--muted)}
+.kpi{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.kpi-value{font-size:2rem;font-weight:950;color:var(--primary);line-height:1}
+.kpi-label{font-size:.78rem;color:var(--muted);font-weight:800;text-transform:uppercase;margin-top:8px}
+.kpi-icon{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;background:#eaf1ff;color:var(--primary);font-weight:900}
+[data-theme="dark"] .kpi-icon{background:#162c52}
+
+.btn{border:0;border-radius:8px;padding:10px 14px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px}
+.btn-primary{background:var(--primary);color:white}
+.btn-gold{background:var(--gold);color:#1f2937}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:#fee2e2;color:var(--danger)}
+.btn-success{background:#dcfce7;color:#166534}
+.btn-sm{min-height:34px;padding:7px 10px;font-size:.82rem}
+.btn-full{width:100%}
+
+.input,.select,.textarea{width:100%;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:11px 12px;outline:none}
+.textarea{min-height:110px;resize:vertical}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(11,61,145,.12)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.label{font-size:.78rem;font-weight:900;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block}
+
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:.88rem}
+th{font-size:.75rem;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+tr:hover td{background:var(--surface-2)}
+
+.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:.72rem;font-weight:900}
+.badge-success{background:#dcfce7;color:#166534}
+.badge-warning{background:#ffedd5;color:#9a3412}
+.badge-danger{background:#fee2e2;color:#991b1b}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-gold{background:#fef3c7;color:#92400e}
+
+.searchbar{display:flex;gap:10px;margin-bottom:16px}
+.searchbar .input{flex:1}
+
+.auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,#071f49,#0B3D91 56%,#0f172a);z-index:9999;display:grid;place-items:center;padding:18px;color:white}
+.auth-card{width:min(460px,100%);background:rgba(255,255,255,.96);color:#111827;border-radius:12px;padding:24px;box-shadow:0 30px 90px rgba(0,0,0,.35)}
+.auth-logo{width:64px;height:64px;border-radius:12px;background:var(--primary);color:white;display:grid;place-items:center;font-size:1.4rem;font-weight:950;margin-bottom:14px}
+.auth-card h1{margin:0;font-size:1.45rem}
+.auth-card p{margin:6px 0 18px;color:#64748b}
+.auth-step{display:none}
+.auth-step.active{display:block}
+.splash-mark{text-align:center}
+.splash-mark .auth-logo{margin:0 auto 16px}
+.progress{height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:18px}
+.progress span{display:block;height:100%;width:0;background:var(--gold);animation:load 1.2s forwards}
+@keyframes load{to{width:100%}}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(8px);z-index:200;display:none;align-items:flex-end;justify-content:center;padding:18px}
+.modal-backdrop.show{display:flex}
+.modal{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;width:min(560px,100%);box-shadow:0 30px 100px rgba(0,0,0,.28);max-height:90vh;overflow:auto}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
+.modal-head h3{margin:0}
+.modal-body{padding:18px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;padding:16px 18px;border-top:1px solid var(--border)}
+
+.modal-body .table-wrap{max-height:320px;overflow:auto}
+
+.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:500;display:grid;gap:10px;width:min(360px,calc(100% - 36px))}
+.toast{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-left:4px solid var(--primary);border-radius:8px;padding:12px}
+.toast strong{display:block}
+
+.profile{display:grid;grid-template-columns:220px 1fr;gap:18px}
+.avatar{width:128px;height:128px;border-radius:12px;background:linear-gradient(135deg,#dbeafe,#fef3c7);display:grid;place-items:center;font-size:2.2rem;font-weight:950;color:var(--primary);overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.timeline{display:grid;gap:10px}
+.timeline-item{border-left:3px solid var(--primary);padding-left:12px}
+
+.chart{height:220px;display:flex;align-items:end;gap:10px;padding-top:20px}
+.bar{flex:1;background:linear-gradient(180deg,var(--primary),#6aa4ff);border-radius:6px 6px 0 0;min-height:18px;position:relative}
+.bar span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:.7rem;font-weight:900;margin-bottom:4px;color:var(--muted)}
+
+.qr-card-preview{width:320px;max-width:100%;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:white;color:#111827}
+.id-front{padding:16px;background:linear-gradient(135deg,#0B3D91,#08285f);color:white}
+.id-body{padding:16px;text-align:center}
+.qr-box{display:grid;place-items:center;margin:10px auto;background:white;padding:10px;width:140px;min-height:140px}
+
+.mobile-menu{display:none}
+
+@media(max-width:920px){
+  .app-shell{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:290px;z-index:120;transform:translateX(-105%);transition:.22s ease}
+  .sidebar.open{transform:none}
+  .mobile-menu{display:inline-flex}
+  .content{padding:16px}
+  .topbar{padding:0 14px}
+  .grid-2,.grid-3,.grid-4,.form-row,.profile{grid-template-columns:1fr}
+  .page-title p{display:none}
+}
+
+@media print{
+  .sidebar,.topbar,.no-print,.toast-wrap{display:none!important}
+  .app-shell{display:block}
+  .content{padding:0}
+  .page{display:block}
+}
+</style>
+</head>
+
+<body>
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div id="splashStep" class="auth-step active">
+      <div class="splash-mark">
+        <div class="auth-logo">PW</div>
+        <h1>Political Ward Management System</h1>
+        <p>Professional Political Administration Platform</p>
+        <div class="progress"><span></span></div>
+      </div>
+    </div>
+
+    <div id="wardStep" class="auth-step">
+      <div class="auth-logo">PW</div>
+      <h1>Select Ward</h1>
+      <p>Choose the ward you want to administer.</p>
+      <label class="label">Ward</label>
+      <select id="loginWard" class="select"></select>
+      <div style="height:12px"></div>
+      <label class="label">Role</label>
+      <select id="loginRole" class="select">
+        <option>Administrator</option>
+        <option>Chairman</option>
+        <option>Secretary</option>
+        <option>Treasurer</option>
+        <option>Volunteer</option>
+        <option>Viewer</option>
+      </select>
+      <div style="height:16px"></div>
+      <button class="btn btn-primary btn-full" onclick="goPassword()">Continue</button>
+    </div>
+
+    <div id="passwordStep" class="auth-step">
+      <div class="auth-logo">PW</div>
+      <h1>Secure Access</h1>
+      <p id="passwordSubtitle">Enter ward password.</p>
+      <label class="label">Password</label>
+      <input id="loginPassword" type="password" class="input" placeholder="Enter password" onkeydown="if(event.key==='Enter') authenticate()" />
+      <div style="height:12px"></div>
+      <label style="display:flex;align-items:center;gap:8px;color:#475569;font-size:.9rem">
+        <input id="rememberLogin" type="checkbox" />
+        Remember this device
+      </label>
+      <div style="height:16px"></div>
+      <button class="btn btn-primary btn-full" onclick="authenticate()">Unlock Dashboard</button>
+      <div style="height:10px"></div>
+      <button class="btn btn-outline btn-full" onclick="showAuthStep('wardStep')">Back</button>
+      <p style="font-size:.78rem;margin-top:16px">
+        Default demo password for each ward is <strong>password</strong>. Change this in Security settings.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="appShell" class="app-shell hidden">
+  <aside id="sidebar" class="sidebar">
+    <div class="brand">
+      <div class="logo">PW</div>
+      <div>
+        <h1>PWMS</h1>
+        <p>Professional Political Administration Platform</p>
+      </div>
+    </div>
+
+    <div class="nav-group" id="navGroup"></div>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <strong id="sideUser">Administrator</strong>
+        <span id="sideWard">Aigbaka Ward</span>
+      </div>
+      <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,.25)" onclick="logout()">Logout</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="btn btn-outline mobile-menu" onclick="toggleSidebar()">Menu</button>
+      <div class="page-title">
+        <div class="kpi-icon" id="currentPageIcon">📊</div>
+        <div>
+          <h2 id="currentPageTitle">Dashboard</h2>
+          <p id="currentPageSubtitle">Executive overview and ward intelligence</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <input id="globalSearch" class="input" style="width:240px" placeholder="Search members, streets, units..." oninput="runGlobalSearch(this.value)" />
+        <button class="btn btn-outline" onclick="toggleTheme()">Theme</button>
+        <button class="btn btn-gold" onclick="showPage('notifications')">Alerts</button>
+      </div>
+    </header>
+
+    <section class="content">
+      <div id="dashboard" class="page active"></div>
+      <div id="members" class="page"></div>
+      <div id="polling-units" class="page"></div>
+      <div id="streets" class="page"></div>
+      <div id="executives" class="page"></div>
+      <div id="attendance" class="page"></div>
+      <div id="meetings" class="page"></div>
+      <div id="campaigns" class="page"></div>
+      <div id="communications" class="page"></div>
+      <div id="reports" class="page"></div>
+      <div id="settings" class="page"></div>
+      <div id="security" class="page"></div>
+      <div id="backup" class="page"></div>
+      <div id="administration" class="page"></div>
+      <div id="notifications" class="page"></div>
+      <div id="member-profile" class="page"></div>
+    </section>
+  </main>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Dialog</h3>
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Close</button>
+    </div>
+    <div id="modalBody" class="modal-body"></div>
+    <div id="modalActions" class="modal-actions"></div>
+  </div>
+</div>
+
+<div id="toastWrap" class="toast-wrap"></div>
+
+
+
+
+
+<!-- QR SCANNER MODAL -->
+<div id="qrScannerModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Scan Member QR</h3>
+      <button class="btn btn-danger btn-sm" onclick="closeQRScanner()">Close</button>
+    </div>
+    <div class="modal-body">
+      <div id="qr-reader"></div>
+      <p class="muted">Point the camera at a valid PWMS member QR code.</p>
+    </div>
+  </div>
+</div>
+<script src="api.js"></script>
+
+<script>
+/* =========================================================
+   PWMS SINGLE FILE ENTERPRISE COMPATIBILITY BUILD
+   Preserves existing localStorage data key: ejigbo_ward_data
+   ========================================================= */
+
+const BACKEND_URL = (
+  window.__PWMS_SMS_BACKEND_URL ||
+  localStorage.getItem('pwms_sms_backend_url') ||
+  'http://localhost:3000'
+).replace(/\/$/, '');
+
+const USE_SUPABASE = true;
+async function callSupabaseBackend(path, options = {}) {
+  const response = await fetch(`${BACKEND_URL}/api/supabase${path}`, options);
+  const text = await response.text();
+  let data = null;
+  try{ data = text ? JSON.parse(text) : null; }catch(e){}
+  if(!response.ok) throw new Error((data && data.error) || 'Supabase backend request failed.');
+  return data;
+}
+const SMS_PRICE = 6.50;
+
+const DATA_KEY = 'ejigbo_ward_data';
+const AUTH_KEY = 'pwms_auth_session';
+const SECURITY_KEY = 'pwms_security_config';
+const AUDIT_KEY = 'pwms_audit_log';
+const THEME_KEY = 'pwms_theme';
+
+const WARD_LIST = ["Aigbaka","Ailegun","Fadu","Ifoshi","Ilamose","Oke-Afa"];
+
+const MODULES = [
+  {id:"dashboard", label:"Dashboard", icon:"📊", subtitle:"Executive overview and ward intelligence"},
+  {id:"members", label:"Members", icon:"👥", subtitle:"Professional member records and profiles"},
+  {id:"polling-units", label:"Polling Units", icon:"🏛️", subtitle:"Polling unit performance and leadership"},
+  {id:"streets", label:"Streets", icon:"🛣️", subtitle:"Street-level membership intelligence"},
+  {id:"executives", label:"Executives", icon:"🎖️", subtitle:"Ward executive management"},
+  {id:"attendance", label:"Attendance", icon:"✅", subtitle:"Sessions, QR check-in, reports and approvals"},
+  {id:"meetings", label:"Meetings", icon:"📅", subtitle:"Meetings, minutes, agenda and action points"},
+  {id:"campaigns", label:"Campaigns", icon:"📣", subtitle:"Campaign activities and follow-up"},
+  {id:"communications", label:"Communications", icon:"💬", subtitle:"SMS, WhatsApp, templates and history"},
+  {id:"reports", label:"Reports", icon:"📈", subtitle:"Exportable ward reports and analytics"},
+  {id:"settings", label:"Settings", icon:"⚙️", subtitle:"Ward settings, theme and appearance"},
+  {id:"security", label:"Security", icon:"🔐", subtitle:"Passwords, roles, sessions and audit logs"},
+  {id:"backup", label:"Backup", icon:"💾", subtitle:"Backup, restore, import and export"},
+  {id:"administration", label:"Administration", icon:"🏢", subtitle:"Future-ready administration controls"}
+];
+
+const ROLE_PERMISSIONS = {
+  Administrator: ["*"],
+  Chairman: ["dashboard","members","polling-units","streets","executives","attendance","meetings","campaigns","communications","reports","settings","backup"],
+  Secretary: ["dashboard","members","attendance","meetings","reports","communications"],
+  Treasurer: ["dashboard","reports"],
+  Volunteer: ["dashboard","attendance","members"],
+  Viewer: ["dashboard","members","polling-units","streets","executives","attendance","meetings","campaigns","reports"]
+};
+
+const EXCO_POSITIONS = [
+  "Councillor","Ward Chairman","Vice Chairman","Secretary","Asst. Secretary","Treasurer",
+  "Financial Secretary","Organizing Secretary","Publicity Secretary","Welfare Officer",
+  "Youth Leader","Women Leader","Legal Adviser","Auditor","Ex-Officio I","Ex-Officio II",
+  "Ex-Officio III","Provost","Asst. Organizing Sec","Asst. Treasurer","Asst. Publicity Sec",
+  "Asst. Women Leader","Asst. Youth Leader","Asst. Welfare","Asst. Financial Sec",
+  "Asst. Auditor","Asst. Legal","Leader Special Needs"
+];
+
+let currentWard = "Aigbaka";
+let currentRole = "Administrator";
+let currentUser = "Administrator";
+let db = {};
+let html5QrCode = null;
+let sessionTimer = null;
+
+function titleCase(value){
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function normalizePhone(phone){
+  return String(phone || "").replace(/\D/g,"").trim();
+}
+
+function getTodayKey(){
+  return new Date().toISOString().split("T")[0];
+}
+
+function nowTime(){
+  return new Date().toLocaleTimeString();
+}
+
+function makeId(prefix){
+  return prefix + "-" + Date.now() + "-" + Math.random().toString(36).slice(2,7).toUpperCase();
+}
+
+function safeJsonParse(jsonString, fallback = null){
+  try{
+    return JSON.parse(jsonString);
+  }catch(e){
+    return fallback;
+  }
+}
+
+async function sha256(text){
+  const data = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+async function pbkdf2Hash(password, salt){
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {name:"PBKDF2", salt:enc.encode(salt), iterations:120000, hash:"SHA-256"},
+    keyMaterial,
+    256
+  );
+  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+function defaultSecurity(){
+  return {
+    sessionMinutes: 30,
+    maxFailedAttempts: 5,
+    lockoutMinutes: 10,
+    wards: {},
+    failed: {},
+    lockedUntil: {}
+  };
+}
+
+async function ensureSecurity(){
+  let security = defaultSecurity();
+  let changed = false;
+
+  try{
+    const saved = localStorage.getItem(SECURITY_KEY);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(parsed && typeof parsed === "object"){
+        security = {
+          ...defaultSecurity(),
+          ...parsed,
+          wards: parsed.wards || {},
+          failed: parsed.failed || {},
+          lockedUntil: parsed.lockedUntil || {}
+        };
+      }
+    }
+  }catch(e){
+    console.warn("Security config was corrupted; resetting it.", e);
+    localStorage.removeItem(SECURITY_KEY);
+  }
+
+  for(const ward of WARD_LIST){
+    if(!security.wards[ward]){
+      const salt = makeId("SALT");
+      security.wards[ward] = {
+        salt,
+        hash: await pbkdf2Hash("password", salt),
+        updatedAt: new Date().toISOString()
+      };
+      changed = true;
+    }
+  }
+
+  if(!security.failed) security.failed = {};
+  if(!security.lockedUntil) security.lockedUntil = {};
+  if(changed) localStorage.setItem(SECURITY_KEY, JSON.stringify(security));
+  return security;
+}
+
+function saveSecurity(security){
+  localStorage.setItem(SECURITY_KEY, JSON.stringify(security));
+}
+
+function audit(action, meta = {}){
+  const logs = JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]");
+  logs.unshift({
+    id: makeId("AUD"),
+    action,
+    ward: currentWard,
+    role: currentRole,
+    user: currentUser,
+    meta,
+    at: new Date().toISOString()
+  });
+  localStorage.setItem(AUDIT_KEY, JSON.stringify(logs.slice(0,500)));
+}
+
+function canAccess(moduleId){
+  const allowed = ROLE_PERMISSIONS[currentRole] || [];
+  return allowed.includes("*") || allowed.includes(moduleId);
+}
+
+function enforce(moduleId){
+  if(canAccess(moduleId)) return true;
+  toast("Permission denied", "Your current role cannot access this module.", "danger");
+  audit("Permission denied", {moduleId});
+  return false;
+}
+
+function toast(title, message = "", type = "info"){
+  const wrap = document.getElementById("toastWrap");
+  const el = document.createElement("div");
+  el.className = "toast";
+  const color = type === "danger" ? "var(--danger)" : type === "success" ? "var(--success)" : type === "warning" ? "var(--warning)" : "var(--primary)";
+  el.style.borderLeftColor = color;
+  el.innerHTML = `<strong>${escapeHtml(title)}</strong>${message ? `<span>${escapeHtml(message)}</span>` : ""}`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+function openModal(title, body, actions = ""){
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalBody").innerHTML = body;
+  document.getElementById("modalActions").innerHTML = actions || `<button class="btn btn-primary" onclick="closeModal()">Done</button>`;
+  document.getElementById("modalBackdrop").classList.add("show");
+}
+
+function closeModal(){
+  document.getElementById("modalBackdrop").classList.remove("show");
+}
+
+function confirmModal(title, message, onYes){
+  const id = "confirm_" + Date.now();
+  window[id] = () => {
+    try{ onYes(); } finally { delete window[id]; closeModal(); }
+  };
+  openModal(
+    title,
+    `<p>${escapeHtml(message)}</p>`,
+    `<button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-danger" onclick="${id}()">Confirm</button>`
+  );
+}
+
+function promptModal(title, fields, onSave, saveText = "Save"){
+  const html = fields.map(f => `
+    <div style="margin-bottom:12px">
+      <label class="label">${escapeHtml(f.label)}</label>
+      ${f.type === "textarea"
+        ? `<textarea id="${f.id}" class="textarea" placeholder="${escapeHtml(f.placeholder || "")}">${escapeHtml(f.value || "")}</textarea>`
+        : `<input id="${f.id}" class="input" type="${f.type || "text"}" value="${escapeHtml(f.value || "")}" placeholder="${escapeHtml(f.placeholder || "")}" />`
+      }
+    </div>
+  `).join("");
+
+  const fn = "saveModal_" + Date.now();
+  window[fn] = () => {
+    const values = {};
+    fields.forEach(f => values[f.id] = document.getElementById(f.id).value);
+    try{ onSave(values); } finally { delete window[fn]; closeModal(); }
+  };
+
+  openModal(
+    title,
+    html,
+    `<button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" onclick="${fn}()">${escapeHtml(saveText)}</button>`
+  );
+}
+
+function initDB(){
+  db = JSON.parse(localStorage.getItem(DATA_KEY) || "{}");
+
+  const AIGBAKA_EXCOS = [
+    { pos:"Chairman", name:"MR ADETUTU SAHEED", phone:"08089811373" },
+    { pos:"Vice Chairman", name:"MR TAJUDEEN BAKARE", phone:"08020756768" },
+    { pos:"Secretary", name:"MR ADENEKAN TAIWO", phone:"08063521555" },
+    { pos:"Asst. Secretary", name:"MRS ABIMBOLA AWOYINKA", phone:"09168636556" },
+    { pos:"Organizing Secretary", name:"MR IDOWU IBRAHIM", phone:"08035202311" },
+    { pos:"Asst. Organizing Secretary", name:"MRS TAIWO ADEBOWALE", phone:"07016481443" },
+    { pos:"Welfare Officer", name:"PASTOR MATHEW OJO", phone:"07066360777" },
+    { pos:"Asst. Welfare", name:"MR FATAI OLANIYAN", phone:"07035147200" },
+    { pos:"Youth Leader", name:"MR AGBABIAKA QUADRI", phone:"07086477123" },
+    { pos:"Asst. Youth Leader", name:"MR HAMMED HASSAN", phone:"09060798351" },
+    { pos:"Women Leader", name:"MRS BISOLA AZEEZ", phone:"08107376256" },
+    { pos:"Asst. Women Leader", name:"MRS VIVIAN OBI", phone:"08068606720" },
+    { pos:"Auditor", name:"AMB. PRINCE UKWA", phone:"08130407001" },
+    { pos:"Asst. Auditor", name:"MRS RASHEEDAT BADMUS", phone:"07014276175" },
+    { pos:"Publicity Secretary", name:"MR GANIYU ABDUSALAM", phone:"08139155500" },
+    { pos:"Asst. Publicity Sec", name:"MRS TEMILADE GAMBARI", phone:"08060293149" },
+    { pos:"Legal Adviser", name:"MRS AKINYEMI ABIDEMI", phone:"08130027981" },
+    { pos:"Asst. Legal", name:"MR OMODU PHILLIPS", phone:"08055555571" },
+    { pos:"Treasurer", name:"MRS MOHAMMED SHAKIRAH", phone:"08066068546" },
+    { pos:"Asst. Treasurer", name:"MR MUSA FAROMBI", phone:"09128928814" },
+    { pos:"Financial Secretary", name:"MRS TIM PAUL", phone:"08108021338" },
+    { pos:"Asst. Financial Sec", name:"MR BABATUNDE MAYOWA", phone:"08141501841" },
+    { pos:"Ex-Officio I", name:"MR OLAWALE TAJUDEEN", phone:"07065242263" },
+    { pos:"Ex-Officio II", name:"MR MUYIDEEN AKINSANMI AKINYEMI", phone:"08029899897" },
+    { pos:"Ex-Officio III", name:"MR MICHAEL ADEPEGBA", phone:"08037704205" },
+    { pos:"Ex-Officio IV", name:"MRS TAIWO TAIWO", phone:"09165253665" },
+    { pos:"Leader Special Needs", name:"MRS BADRUDEEN AFUSAT", phone:"09048790960" }
+  ];
+
+  const AIGBAKA_UNITS = [
+    { num: "025", code: "Junction of Ademola Oduse / Segun Awolowo Street 1" },
+    { num: "026", code: "Junction of Ademola Oduse / Segun Awolowo 2" },
+    { num: "027", code: "Junction of Cyril Njoku/Afolabi Salami Street" },
+    { num: "029", code: "Junction of Olayinka Omiyale /Adekuroye Street" },
+    { num: "030", code: "Junction of Olusesi/Joseph Street" },
+    { num: "031", code: "at 15 Olusesi Street" },
+    { num: "053", code: "Junction of Alaba /Tajudeen Olusola street" },
+    { num: "055", code: "Olorunsogo Street" },
+    { num: "056", code: "15 Olorunsogo Street" },
+    { num: "057", code: "5 Balogun /Gbunde Street" },
+    { num: "058", code: "9 Balogun /Gbunde street" },
+    { num: "059", code: "Junction of Fayemi/Olu Olamikan st." },
+    { num: "060", code: "Booth at Yemi/Olu Olamikan" },
+    { num: "061", code: "Junction of Idimu Road/ Jubril Olabisi Street" },
+    { num: "062", code: "Junction of Idimu Road (by Dorcas b/stop)" },
+    { num: "063", code: "Junction of Caroline Odu/Adenikan Ajiboye" },
+    { num: "064", code: "Junction of Adeniran Street Ajiboye/Ifelodun Street 1" },
+    { num: "065", code: "Junction of Ademiran street Ajiboye /Ifelodun Street 2" },
+    { num: "066", code: "Junction of Olutimehin Oduwaye st." },
+    { num: "067", code: "Junction of Egbapeju/Osungbesan Street" },
+    { num: "068", code: "Junction of Agbede/Morinatu Street" },
+    { num: "070", code: "Junction of Adunni Adebesin Apena Street" },
+    { num: "071", code: "30 Mosalasi Street" },
+    { num: "072", code: "Junction of Lafenwa /Coker road" },
+    { num: "112", code: "8, Toyin Davids Street" },
+    { num: "113", code: "1b Olanrewaju Street" },
+    { num: "114", code: "1 Aya Oye Street" },
+    { num: "115", code: "No 2 Adewunmi Street" },
+    { num: "118", code: "1 Abuna Street" },
+    { num: "119", code: "16 Oboye Street" },
+    { num: "120", code: "56 Oboye Street" },
+    { num: "150", code: "1 Owuromi Apana Street" },
+    { num: "155", code: "49 Aigbedion Street" },
+    { num: "157", code: "40 Disu Aina Efon Street" },
+    { num: "158", code: "22, Afolabi Oyewale Street" },
+    { num: "159", code: "8 Araromi Street" },
+    { num: "160", code: "14 Taiwo Street" },
+    { num: "161", code: "19 Sunmonu Animashaun Street" },
+    { num: "162", code: "10 Ganiyu Street" },
+    { num: "163", code: "47 Idimu Street" },
+    { num: "164", code: "2 Ilufunmi Street" },
+    { num: "165", code: "1 Durotola Street" },
+    { num: "166", code: "26 Madam Okeshola Street" },
+    { num: "167", code: "Junction of Sule Ishanyande street" },
+    { num: "168", code: "Junction of Fayemi /Aminatu Ilo" },
+    { num: "169", code: "43 Caroline Street" },
+    { num: "170", code: "Junction of Jemifo/ Adeniran Ajiboye st." },
+    { num: "171", code: "42 Ifelodun Street" },
+    { num: "172", code: "22 Tajudeen Olusoga Street" },
+    { num: "173", code: "4 Adeola Almoroof street" },
+    { num: "174", code: "35 Agbede street" },
+    { num: "175", code: "14 Morinatu street" },
+    { num: "177", code: "No 1 Ago Tapa Compound" },
+    { num: "178", code: "Aramago Compound" }
+];
+
+  WARD_LIST.forEach(w => {
+    if(!db[w]){
+      db[w] = {
+        units:[{name:"General Unit", num:"GEN", code:"GENERAL", leader:"", phone:"", streets:[]}],
+        excos:[],
+        wardStreets:[],
+        voters:{GEN:[]},
+        attendance:{},
+        attendanceSessions:[],
+        activeAttendanceSession:null,
+        meetings:[],
+        campaigns:[],
+        communications:[],
+        announcements:[],
+        settings:{}
+      };
+
+      if(w === "Aigbaka"){
+        AIGBAKA_UNITS.forEach(unit => {
+          db[w].units.push({
+            name:unit.code,
+            num:unit.num,
+            code:unit.code,
+            leader:"",
+            phone:"",
+            streets:[]
+          });
+          if(!db[w].voters[unit.num]) db[w].voters[unit.num] = [];
+        });
+        db[w].excos = AIGBAKA_EXCOS.map(e => ({...e}));
+      }else{
+        db[w].excos = EXCO_POSITIONS.map(pos => ({pos, name:"", phone:""}));
+      }
+    }
+
+    db[w].units = db[w].units || [];
+    db[w].excos = db[w].excos || [];
+    db[w].wardStreets = db[w].wardStreets || [];
+    db[w].voters = db[w].voters || {GEN:[]};
+    db[w].attendance = db[w].attendance || {};
+    db[w].attendanceSessions = db[w].attendanceSessions || [];
+    db[w].activeAttendanceSession = db[w].activeAttendanceSession || null;
+    db[w].meetings = db[w].meetings || [];
+    db[w].campaigns = db[w].campaigns || [];
+    db[w].communications = db[w].communications || [];
+    db[w].announcements = db[w].announcements || [];
+    db[w].settings = db[w].settings || {};
+
+    db[w].units.forEach(u => {
+      if(!db[w].voters[u.num]) db[w].voters[u.num] = [];
+    });
+  });
+
+  save(false);
+}
+
+async function save(sync = true){
+
+    localStorage.setItem(
+        DATA_KEY,
+        JSON.stringify(db)
+    );
+
+    if(!sync || !USE_SUPABASE) return;
+
+    try{
+
+       await API.saveWard(
+    currentWard,
+    db
+);
+    }catch(e){
+
+        console.warn(
+            "Backend sync failed",
+            e
+        );
+
+        toast(
+            "Offline mode",
+            "Changes saved on this device.",
+            "warning"
+        );
+
+    }
+
+}
+
+async function loadDatabase(){
+
+    initDB();
+
+    if(!USE_SUPABASE) return;
+
+    try{
+
+        const result =
+    await API.loadWard(currentWard);
+
+if(result.ok){
+
+    db = result.data || {};
+
+    initDB();
+
+}
+
+    }catch(err){
+
+        console.warn(err);
+
+    }
+
+}
+function getWard(){
+  return db[currentWard];
+}
+
+function allMembers(){
+  const ward = getWard();
+  const result = [];
+  Object.keys(ward.voters || {}).forEach(unitNum => {
+    (ward.voters[unitNum] || []).forEach((member, index) => {
+      result.push({...member, unitNum, index});
+    });
+  });
+  return result;
+}
+
+function findMemberById(id){
+  return allMembers().find(m => m.id === id || m.qrId === id || m.membershipNumber === id);
+}
+
+function duplicatePhone(phone, excludeId = null){
+  const normalized = normalizePhone(phone);
+  if(!normalized) return false;
+  return allMembers().some(m => normalizePhone(m.phone) === normalized && (m.id || m.qrId) !== excludeId);
+}
+
+function updateWardStreetSummary(){
+  const ward = getWard();
+  const merged = {};
+  (ward.wardStreets || []).forEach(s => {
+    if(!s.name) return;
+    merged[s.name.trim().toLowerCase()] = { ...s, name:s.name.trim() };
+  });
+  allMembers().forEach(m => {
+    if(!m.street) return;
+    const name = m.street.trim();
+    if(!name) return;
+    const key = name.toLowerCase();
+    if(!merged[key]) merged[key] = {name};
+  });
+  ward.wardStreets = Object.values(merged).sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function getUnitStreetStats(unitNum){
+  const stats = {};
+  (getWard().voters[unitNum] || []).forEach(voter => {
+    if(!voter.street) return;
+    const street = voter.street.trim();
+    if(!street) return;
+    stats[street] = (stats[street] || 0) + 1;
+  });
+  return Object.entries(stats).map(([street,voters]) => ({street,voters}));
+}
+
+function updateUnitStreetSummary(){
+  const ward = getWard();
+  ward.units.forEach(unit => unit.streets = getUnitStreetStats(unit.num));
+}
+
+function wardStats(){
+  updateWardStreetSummary();
+  updateUnitStreetSummary();
+
+  const ward = getWard();
+  const members = allMembers();
+  const sessions = ward.attendanceSessions || [];
+  const activeSession = getActiveSession();
+  const today = getTodayKey();
+
+  const todayCount = sessions
+    .filter(s => String(s.createdAt || s.date || "").includes(today) || s.date === new Date().toLocaleDateString())
+    .reduce((n,s) => n + (s.returning || []).length + (s.newMembers || []).length, 0);
+
+  return {
+    totalMembers: members.length,
+    totalUnits: ward.units.length,
+    totalStreets: ward.wardStreets.length,
+    totalExcos: ward.excos.length,
+    totalSessions: sessions.length,
+    activeSession,
+    todayAttendance: todayCount,
+    returning: sessions.reduce((n,s)=>n+(s.returning || []).length,0),
+    newMembers: sessions.reduce((n,s)=>n+(s.newMembers || []).length,0)
+  };
+}
+
+function setupNav(){
+  const nav = document.getElementById("navGroup");
+  nav.innerHTML = MODULES
+    .filter(m => canAccess(m.id))
+    .map(m => `
+      <button id="nav-${m.id}" class="nav-btn ${m.id === "dashboard" ? "active" : ""}" onclick="showPage('${m.id}')">
+        <span class="nav-icon">${m.icon}</span>
+        <span>${m.label}</span>
+      </button>
+    `).join("");
+}
+
+function showPage(id){
+  if(!enforce(id)) return;
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+
+  const page = document.getElementById(id);
+  if(page) page.classList.add("active");
+  const navBtn = document.getElementById("nav-" + id);
+  if(navBtn) navBtn.classList.add("active");
+
+  const meta = MODULES.find(m => m.id === id) || {label:"Page", icon:"📌", subtitle:""};
+  document.getElementById("currentPageTitle").textContent = meta.label;
+  document.getElementById("currentPageSubtitle").textContent = meta.subtitle;
+  document.getElementById("currentPageIcon").textContent = meta.icon;
+
+  renderPage(id);
+  document.getElementById("sidebar").classList.remove("open");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function renderPage(id){
+  const map = {
+    dashboard: renderDashboard,
+    members: renderMembers,
+    "polling-units": renderPollingUnits,
+    streets: renderStreets,
+    executives: renderExecutives,
+    attendance: renderAttendance,
+    meetings: renderMeetings,
+    campaigns: renderCampaigns,
+    communications: renderCommunications,
+    reports: renderReports,
+    settings: renderSettings,
+    security: renderSecurity,
+    backup: renderBackup,
+    administration: renderAdministration,
+    notifications: renderNotifications
+  };
+  if(map[id]) map[id]();
+}
+
+function renderAll(){
+  setupNav();
+  MODULES.forEach(m => {
+    const el = document.getElementById(m.id);
+    if(el && el.classList.contains("active")) renderPage(m.id);
+  });
+}
+
+
+
+
+
+
+/* =========================
+   AUTHENTICATION AND SESSION
+   ========================= */
+
+function showAuthStep(id){
+  const step = document.getElementById(id);
+  if(!step) return;
+  document.querySelectorAll(".auth-step").forEach(s => s.classList.remove("active"));
+  step.classList.add("active");
+}
+
+let authBootTimer = null;
+
+async function bootAuth(){
+  try{
+    await Promise.race([
+      ensureSecurity(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Security setup timed out")), 1200))
+    ]);
+  }catch(e){
+    console.warn("Security setup failed; falling back to auth screen.", e);
+  }
+
+  const wardSelect = document.getElementById("loginWard");
+  if(wardSelect){
+    wardSelect.innerHTML = WARD_LIST.map(w => `<option value="${w}">${w} Ward</option>`).join("");
+  }
+
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if(savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+
+  if(authBootTimer) clearTimeout(authBootTimer);
+  authBootTimer = setTimeout(() => {
+    if(document.querySelector('.auth-step.active')?.id !== 'splashStep') return;
+    const session = safeJsonParse(localStorage.getItem(AUTH_KEY), null);
+    if(session && session.ward && session.expiresAt && Date.now() < session.expiresAt){
+      currentWard = session.ward;
+      currentRole = session.role || "Administrator";
+      currentUser = session.user || currentRole;
+      unlockApp();
+    }else{
+      localStorage.removeItem(AUTH_KEY);
+      showAuthStep("wardStep");
+    }
+  }, 1300);
+}
+
+function goPassword(){
+  if(authBootTimer) clearTimeout(authBootTimer);
+  currentWard = document.getElementById("loginWard").value;
+  currentRole = document.getElementById("loginRole").value;
+  currentUser = currentRole;
+  document.getElementById("passwordSubtitle").textContent = `Enter password for ${currentWard} Ward as ${currentRole}.`;
+  showAuthStep("passwordStep");
+  setTimeout(() => document.getElementById("loginPassword").focus(), 60);
+}
+
+async function authenticate(){
+  const security = await ensureSecurity();
+  const ward = document.getElementById("loginWard").value;
+  const role = document.getElementById("loginRole").value;
+  const password = document.getElementById("loginPassword").value;
+
+  const lockedUntil = security.lockedUntil[ward] || 0;
+  if(Date.now() < lockedUntil){
+    const mins = Math.ceil((lockedUntil - Date.now()) / 60000);
+    toast("Ward locked", `Try again in ${mins} minute(s).`, "danger");
+    return;
+  }
+
+  const wardSecurity = security.wards[ward];
+  const hash = await pbkdf2Hash(password, wardSecurity.salt);
+
+  if(hash !== wardSecurity.hash){
+    security.failed[ward] = (security.failed[ward] || 0) + 1;
+
+    if(security.failed[ward] >= security.maxFailedAttempts){
+      security.lockedUntil[ward] = Date.now() + (security.lockoutMinutes * 60000);
+      security.failed[ward] = 0;
+      audit("Ward locked after failed login", {ward});
+      toast("Too many attempts", "Access is temporarily locked.", "danger");
+    }else{
+      toast("Invalid password", "Please check the ward password.", "danger");
+    }
+
+    saveSecurity(security);
+    return;
+  }
+
+  security.failed[ward] = 0;
+  saveSecurity(security);
+
+  currentWard = ward;
+  currentRole = role;
+  currentUser = role;
+
+  const remember = document.getElementById("rememberLogin").checked;
+  const minutes = remember ? 7 * 24 * 60 : security.sessionMinutes;
+
+  localStorage.setItem(AUTH_KEY, JSON.stringify({
+    ward,
+    role,
+    user: role,
+    expiresAt: Date.now() + minutes * 60000
+  }));
+
+  audit("Login successful", {ward, role});
+  unlockApp();
+}
+
+function unlockApp(){
+  document.getElementById("authScreen").classList.add("hidden");
+  document.getElementById("appShell").classList.remove("hidden");
+  document.getElementById("sideUser").textContent = currentRole;
+  document.getElementById("sideWard").textContent = `${currentWard} Ward`;
+  setupNav();
+  showPage("dashboard");
+  resetSessionTimer();
+}
+
+function logout(){
+  audit("Logout");
+  localStorage.removeItem(AUTH_KEY);
+  document.getElementById("appShell").classList.add("hidden");
+  document.getElementById("authScreen").classList.remove("hidden");
+  document.getElementById("loginPassword").value = "";
+  showAuthStep("wardStep");
+}
+
+function resetSessionTimer(){
+  clearTimeout(sessionTimer);
+  const security = JSON.parse(localStorage.getItem(SECURITY_KEY) || "null") || defaultSecurity();
+  sessionTimer = setTimeout(() => {
+    toast("Session locked", "Logged out after inactivity.", "warning");
+    logout();
+  }, security.sessionMinutes * 60000);
+}
+
+["click","keydown","touchstart","mousemove"].forEach(evt => {
+  window.addEventListener(evt, () => {
+    if(!document.getElementById("appShell").classList.contains("hidden")){
+      resetSessionTimer();
+    }
+  }, {passive:true});
+});
+
+/* =========================
+   DASHBOARD
+   ========================= */
+
+function renderDashboard(){
+  const stats = wardStats();
+  const members = allMembers();
+  const recentLogs = JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]").slice(0,6);
+  const sessions = (getWard().attendanceSessions || []).slice().reverse().slice(0,5);
+
+  document.getElementById("dashboard").innerHTML = `
+    <div class="grid grid-4">
+      ${kpiCard("Total Members", stats.totalMembers, "👥")}
+      ${kpiCard("Today's Attendance", stats.todayAttendance, "✅")}
+      ${kpiCard("Polling Units", stats.totalUnits, "🏛️")}
+      ${kpiCard("Ward Streets", stats.totalStreets, "🛣️")}
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="grid grid-3">
+      <div class="card" style="grid-column:span 2">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+          <div>
+            <h3 style="margin:0">Welcome, ${escapeHtml(currentUser)}</h3>
+            <p class="muted" style="margin:6px 0 0">${escapeHtml(currentWard)} Ward command center. Data is ${USE_SUPABASE ? "synced with Supabase" : "saved offline on this device"}.</p>
+          </div>
+          <span class="badge ${stats.activeSession ? "badge-success" : "badge-warning"}">
+            ${stats.activeSession ? "Attendance Active" : "No Active Session"}
+          </span>
+        </div>
+
+        <div class="chart">
+          ${chartBars([
+            ["Members", stats.totalMembers],
+            ["Units", stats.totalUnits],
+            ["Streets", stats.totalStreets],
+            ["Excos", stats.totalExcos],
+            ["Meetings", getWard().meetings.length],
+            ["Campaigns", getWard().campaigns.length]
+          ])}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Quick Actions</h3>
+        <div class="grid">
+          <button class="btn btn-primary" onclick="showMemberForm()">Add Member</button>
+          <button class="btn btn-outline" onclick="showUnitForm()">Add Polling Unit</button>
+          <button class="btn btn-outline" onclick="startAttendanceSession()">Start Attendance</button>
+          <button class="btn btn-gold" onclick="showPage('reports')">Open Reports</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="grid grid-3">
+      <div class="card">
+        <h3 class="card-title">Upcoming Meetings</h3>
+        ${emptyOrList(getWard().meetings.filter(m => m.status !== "Closed").slice(0,5), m => `
+          <div class="timeline-item">
+            <strong>${escapeHtml(m.title)}</strong>
+            <div class="muted">${escapeHtml(m.date || "No date")} · ${escapeHtml(m.venue || "No venue")}</div>
+          </div>
+        `)}
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Recent Activity</h3>
+        ${emptyOrList(recentLogs, l => `
+          <div class="timeline-item">
+            <strong>${escapeHtml(l.action)}</strong>
+            <div class="muted">${new Date(l.at).toLocaleString()}</div>
+          </div>
+        `)}
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Weather Widget</h3>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="kpi-icon">☀️</div>
+          <div>
+            <strong>Ejigbo Area</strong>
+            <div class="muted">Weather integration placeholder</div>
+          </div>
+        </div>
+        <div style="height:16px"></div>
+        <h3 class="card-title">Announcements</h3>
+        ${emptyOrList((getWard().announcements || []).slice(0,3), a => `
+          <div class="timeline-item">
+            <strong>${escapeHtml(a.title)}</strong>
+            <div class="muted">${escapeHtml(a.body)}</div>
+          </div>
+        `)}
+      </div>
+    </div>
+  `;
+}
+
+function kpiCard(label, value, icon){
+  return `
+    <div class="card">
+      <div class="kpi">
+        <div>
+          <div class="kpi-value">${escapeHtml(value)}</div>
+          <div class="kpi-label">${escapeHtml(label)}</div>
+        </div>
+        <div class="kpi-icon">${icon}</div>
+      </div>
+    </div>
+  `;
+}
+
+function chartBars(items){
+  const max = Math.max(...items.map(i => Number(i[1]) || 0), 1);
+  return items.map(([label,value]) => `
+    <div class="bar" style="height:${Math.max(12, (value / max) * 190)}px">
+      <span>${escapeHtml(value)}</span>
+    </div>
+  `).join("");
+}
+
+function emptyOrList(items, render){
+  if(!items || !items.length) return `<p class="muted">No records yet.</p>`;
+  return `<div class="timeline">${items.map(render).join("")}</div>`;
+}
+
+/* =========================
+   MEMBERS
+   ========================= */
+
+function renderMembers(){
+  const members = allMembers();
+  document.getElementById("members").innerHTML = `
+    <div class="searchbar">
+      <input class="input" id="memberSearch" placeholder="Search name, phone, street, polling unit..." oninput="filterMemberTable(this.value)" />
+      <button class="btn btn-primary" onclick="showMemberForm()">Add Member</button>
+      <button class="btn btn-outline" onclick="exportMembersCSV()">Export CSV</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Phone</th>
+            <th>Street</th>
+            <th>Polling Unit</th>
+            <th>Status</th>
+            <th>Last Attendance</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="memberTable">
+          ${members.map(memberRow).join("") || `<tr><td colspan="7">No members yet.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function memberRow(m){
+  const initials = (m.name || "Member").split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase();
+  return `
+    <tr data-search="${escapeHtml(`${m.name} ${m.phone} ${m.street} ${m.unitNum}`.toLowerCase())}">
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="kpi-icon">${escapeHtml(initials || "M")}</div>
+          <div>
+            <strong>${escapeHtml(m.name || "Unnamed Member")}</strong>
+            <div class="muted">${escapeHtml(m.membershipNumber || m.id || m.qrId || "No ID")}</div>
+          </div>
+        </div>
+      </td>
+      <td>${escapeHtml(m.phone || "")}</td>
+      <td>${escapeHtml(m.street || "")}</td>
+      <td><span class="badge badge-blue">${escapeHtml(m.unitNum)}</span></td>
+      <td><span class="badge badge-success">${escapeHtml(m.status || "Active")}</span></td>
+      <td>${escapeHtml(m.lastAttendance || "No record")}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openMemberProfile('${escapeHtml(m.id || m.qrId)}')">Open</button>
+        <button class="btn btn-outline btn-sm" onclick="showMemberForm('${escapeHtml(m.id || m.qrId)}')">Edit</button>
+      </td>
+    </tr>
+  `;
+}
+
+function filterMemberTable(value){
+  value = value.toLowerCase().trim();
+  document.querySelectorAll("#memberTable tr").forEach(row => {
+    row.style.display = row.dataset.search && row.dataset.search.includes(value) ? "" : "none";
+  });
+}
+
+function showMemberForm(id = null){
+  if(!enforce("members")) return;
+  const member = id ? findMemberById(id) : {};
+  const units = getWard().units || [];
+  const unitOptions = units.map(u => `<option value="${escapeHtml(u.num)}" ${member.unitNum === u.num ? "selected" : ""}>Unit ${escapeHtml(u.num)} - ${escapeHtml(u.name || u.code || "")}</option>`).join("");
+  const body = `
+    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
+      <div style="width:120px">
+        <div id="m_passport_preview" class="avatar" style="width:120px;height:120px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#dbeafe,#fef3c7);display:grid;place-items:center;font-size:2.2rem;font-weight:950;color:var(--primary)">
+          ${member.passport ? `<img id="m_passport_img" src="${escapeHtml(member.passport)}" style="width:100%;height:100%;object-fit:cover"/>` : `${escapeHtml((member.name || "Member").split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase())}`}
+        </div>
+        <input id="m_passport_input" type="file" accept="image/jpeg,image/jpg,image/png" class="hidden" onchange="handleMemberPassportFile(event)" />
+        <input id="m_passport_data" type="hidden" value="${escapeHtml(member.passport || "")}" />
+        <div style="height:8px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('m_passport_input').click()">Change Photo</button>
+          <button class="btn btn-outline btn-sm" onclick="removeMemberPassportPreview()">Remove Photo</button>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="form-row">
+          <div><label class="label">Full Name *</label><input id="m_name" class="input" value="${escapeHtml(member.name || "")}" /></div>
+          <div><label class="label">Gender</label><select id="m_gender" class="select">
+            ${["","Male","Female"].map(v=>`<option ${member.gender===v?"selected":""}>${v}</option>`).join("")}
+          </select></div>
+          <div><label class="label">Date of Birth</label><input id="m_dob" type="date" class="input" value="${escapeHtml(member.dob || "")}" /></div>
+          <div><label class="label">Phone *</label><input id="m_phone" class="input" value="${escapeHtml(member.phone || "")}" /></div>
+          <div><label class="label">Alternative Phone</label><input id="m_altPhone" class="input" value="${escapeHtml(member.altPhone || "")}" /></div>
+          <div><label class="label">Email</label><input id="m_email" class="input" value="${escapeHtml(member.email || "")}" /></div>
+          <div><label class="label">Occupation</label><input id="m_occupation" class="input" value="${escapeHtml(member.occupation || "")}" /></div>
+          <div><label class="label">Support Level</label><select id="m_supportLevel" class="select">
+            ${["Unknown","Strong","Moderate","Weak","Undecided"].map(v=>`<option ${member.supportLevel===v?"selected":""}>${v}</option>`).join("")}
+          </select></div>
+          <div><label class="label">Street</label><input id="m_street" class="input" value="${escapeHtml(member.street || "")}" /></div>
+          <div><label class="label">Polling Unit</label><select id="m_unit" class="select">${unitOptions}</select></div>
+        </div>
+      </div>
+    </div>
+    <div style="height:12px"></div>
+    <label class="label">Address</label><textarea id="m_address" class="textarea">${escapeHtml(member.address || "")}</textarea>
+    <div style="height:12px"></div>
+    <label class="label">Notes</label><textarea id="m_notes" class="textarea">${escapeHtml(member.notes || "")}</textarea>
+  `;
+
+  const saveFn = "saveMember_" + Date.now();
+  window[saveFn] = () => {
+    const name = titleCase(document.getElementById("m_name").value);
+    const phone = document.getElementById("m_phone").value.trim();
+    const unitNum = document.getElementById("m_unit").value;
+
+    if(!name){
+      toast("Validation error", "Member name is required.", "danger");
+      return;
+    }
+
+    if(phone && duplicatePhone(phone, member.id || member.qrId)){
+      toast("Duplicate phone", "This phone number already exists.", "danger");
+      return;
+    }
+
+    const newData = {
+      id: member.id || makeId("MBR"),
+      qrId: member.qrId || member.id || makeId("QR"),
+      membershipNumber: member.membershipNumber || makeId("PWMS"),
+      name,
+      gender: document.getElementById("m_gender").value,
+      dob: document.getElementById("m_dob").value,
+      phone,
+      altPhone: document.getElementById("m_altPhone").value.trim(),
+      email: document.getElementById("m_email").value.trim(),
+      occupation: document.getElementById("m_occupation").value.trim(),
+      supportLevel: document.getElementById("m_supportLevel").value,
+      street: titleCase(document.getElementById("m_street").value),
+      ward: currentWard,
+      address: document.getElementById("m_address").value.trim(),
+      notes: document.getElementById("m_notes").value.trim(),
+      status: member.status || "Active",
+      tags: member.tags || [],
+      registrationDate: member.registrationDate || new Date().toISOString(),
+      createdBy: member.createdBy || currentUser,
+      updatedBy: currentUser,
+      updatedAt: new Date().toISOString(),
+      selected: member.selected || false
+    };
+
+    // Attach passport image data if provided (data URL). If empty, the passport will be removed.
+    try{
+      const passportData = document.getElementById('m_passport_data').value.trim();
+      if(passportData) newData.passport = passportData;
+    }catch(e){}
+
+    const ward = getWard();
+    if(!ward.voters[unitNum]) ward.voters[unitNum] = [];
+
+    if(id && member.unitNum){
+      const oldList = ward.voters[member.unitNum];
+      oldList.splice(member.index, 1);
+    }
+
+    ward.voters[unitNum].push(newData);
+
+    if(newData.street && !ward.wardStreets.some(s => s.name.toLowerCase() === newData.street.toLowerCase())){
+      ward.wardStreets.push({name:newData.street});
+    }
+
+    save();
+    audit(id ? "Member updated" : "Member created", {member:newData.name});
+    closeModal();
+    renderMembers();
+    toast("Member saved", `${newData.name} has been saved.`, "success");
+  };
+
+  openModal(
+    id ? "Edit Member Profile" : "Add New Member",
+    body,
+    `<button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" onclick="${saveFn}()">Save Member</button>`
+  );
+}
+
+function estimateDataUrlSize(dataUrl){
+  const base64 = dataUrl.split(',')[1] || '';
+  return Math.ceil(base64.length * 3 / 4);
+}
+
+function processPassportImage(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(){
+      const img = new Image();
+      img.onload = function(){
+        const targetWidth = 300;
+        const targetHeight = 400;
+        const aspect = targetWidth / targetHeight;
+        let srcX = 0;
+        let srcY = 0;
+        let srcW = img.width;
+        let srcH = img.height;
+        const srcAspect = img.width / img.height;
+
+        if(srcAspect > aspect){
+          srcW = img.height * aspect;
+          srcX = (img.width - srcW) / 2;
+        } else {
+          srcH = img.width / aspect;
+          srcY = (img.height - srcH) / 2;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, targetWidth, targetHeight);
+
+        let quality = 0.82;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        let size = estimateDataUrlSize(dataUrl);
+
+        while(size > 500 * 1024 && quality > 0.55){
+          quality -= 0.05;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+          size = estimateDataUrlSize(dataUrl);
+        }
+
+        if(size > 1000 * 1024){
+          reject(new Error('Processed image exceeds 1MB. Choose a smaller photo.'));
+          return;
+        }
+
+        resolve(dataUrl);
+      };
+      img.onerror = function(){
+        reject(new Error('Could not load image.'));
+      };
+      img.src = reader.result;
+    };
+    reader.onerror = function(){
+      reject(new Error('Unable to read file.'));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function handleMemberPassportFile(e){
+  const file = e && e.target && e.target.files && e.target.files[0];
+  if(!file) return;
+  const allowed = ['image/jpeg','image/jpg','image/png'];
+  if(!allowed.includes(file.type)){
+    toast('Invalid file', 'Only JPG, JPEG and PNG are allowed.', 'danger');
+    e.target.value = '';
+    return;
+  }
+  if(file.size > 2 * 1024 * 1024){
+    toast('File too large', 'Maximum allowed size is 2MB.', 'danger');
+    e.target.value = '';
+    return;
+  }
+
+  processPassportImage(file)
+    .then(data => {
+      const hidden = document.getElementById('m_passport_data');
+      if(hidden) hidden.value = data;
+      const preview = document.getElementById('m_passport_preview');
+      if(preview){
+        preview.innerHTML = `<img id="m_passport_img" src="${data}" style="width:100%;height:100%;object-fit:cover"/>`;
+      }
+      toast('Photo selected', 'Preview updated.', 'success');
+    })
+    .catch(error => {
+      toast('Photo error', error.message || 'Failed to process image.', 'danger');
+      e.target.value = '';
+    });
+}
+
+function removeMemberPassportPreview(){
+  const hidden = document.getElementById('m_passport_data');
+  if(hidden) hidden.value = '';
+  const input = document.getElementById('m_passport_input');
+  if(input) input.value = '';
+  const preview = document.getElementById('m_passport_preview');
+  if(preview){
+    const nameEl = document.getElementById('m_name');
+    const initials = (nameEl && nameEl.value) ? nameEl.value.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase() : 'MB';
+    preview.innerHTML = escapeHtml(initials);
+  }
+}
+
+function openMemberProfile(id){
+  const m = findMemberById(id);
+  if(!m){
+    toast("Member not found", "The selected record could not be opened.", "danger");
+    return;
+  }
+
+  const initials = (m.name || "Member").split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase();
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById("member-profile").classList.add("active");
+  document.getElementById("currentPageTitle").textContent = "Member Profile";
+  document.getElementById("currentPageSubtitle").textContent = m.name || "Member record";
+  document.getElementById("currentPageIcon").textContent = "👤";
+
+  document.getElementById("member-profile").innerHTML = `
+    <div class="profile">
+      <div class="card">
+        <div class="avatar" id="profile_avatar">${m.passport ? `<img src="${escapeHtml(m.passport)}" style="width:100%;height:100%;object-fit:cover"/>` : escapeHtml(initials)}</div>
+        <h2 style="margin-bottom:4px">${escapeHtml(m.name || "Unnamed")}</h2>
+        <div class="muted">${escapeHtml(m.membershipNumber || m.id || "")}</div>
+        <div style="height:14px"></div>
+        <div class="grid">
+          <button class="btn btn-primary" onclick="callPhone('${escapeHtml(m.phone || "")}')">Call</button>
+          <button class="btn btn-outline" onclick="sendWhatsApp('${escapeHtml(m.phone || "")}','${escapeHtml(m.name || "")}')">WhatsApp</button>
+          <button class="btn btn-outline" onclick="showQRCode('${escapeHtml(m.id || m.qrId)}')">Print ID Card</button>
+          <button class="btn btn-outline" onclick="showMemberForm('${escapeHtml(m.id || m.qrId)}')">Edit Profile</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3 class="card-title">Profile Information</h3>
+          <div class="grid grid-3">
+            ${info("Phone",m.phone)}
+            ${info("Gender",m.gender)}
+            ${info("Street",m.street)}
+            ${info("Polling Unit",m.unitNum)}
+            ${info("Occupation",m.occupation)}
+            ${info("Support Level",m.supportLevel || "Unknown")}
+            ${info("Registration Date",m.registrationDate ? new Date(m.registrationDate).toLocaleDateString() : "")}
+            ${info("Created By",m.createdBy)}
+            ${info("Updated By",m.updatedBy)}
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Activity Timeline</h3>
+          <div class="timeline">
+            <div class="timeline-item"><strong>Profile opened</strong><div class="muted">${new Date().toLocaleString()}</div></div>
+            <div class="timeline-item"><strong>Registration</strong><div class="muted">${escapeHtml(m.registrationDate || "Existing legacy member")}</div></div>
+            <div class="timeline-item"><strong>Last Attendance</strong><div class="muted">${escapeHtml(m.lastAttendance || "No record")}</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Notes</h3>
+          <p>${escapeHtml(m.notes || "No notes recorded.")}</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function info(label,value){
+  return `<div><div class="kpi-label">${escapeHtml(label)}</div><strong>${escapeHtml(value || "—")}</strong></div>`;
+}
+
+
+
+
+
+
+/* =========================
+   POLLING UNITS
+   ========================= */
+
+function renderPollingUnits(){
+  const ward = getWard();
+  updateUnitStreetSummary();
+
+  document.getElementById("polling-units").innerHTML = `
+    <div class="searchbar">
+      <input class="input" placeholder="Search polling units..." oninput="filterCards('unit-card',this.value)" />
+      <button class="btn btn-primary" onclick="showUnitForm()">Add Polling Unit</button>
+    </div>
+
+    <div class="grid grid-3">
+      ${ward.units.map((u,i) => {
+        const voters = ward.voters[u.num] || [];
+        const streets = getUnitStreetStats(u.num);
+        const strength = voters.length >= 300 ? "Strong" : voters.length >= 150 ? "Moderate" : voters.length >= 50 ? "Weak" : "Very Weak";
+        return `
+          <div class="card unit-card" data-search="${escapeHtml(`${u.num} ${u.name} ${u.code} ${u.leader}`.toLowerCase())}">
+            <div style="display:flex;justify-content:space-between;gap:12px">
+              <div>
+                <div class="muted">Unit ${escapeHtml(u.num || "?")}</div>
+                <h3 style="margin:4px 0">${escapeHtml(u.name || u.code || "Unnamed Unit")}</h3>
+              </div>
+              <span class="badge ${strength === "Strong" ? "badge-success" : strength === "Moderate" ? "badge-warning" : "badge-danger"}">${strength}</span>
+            </div>
+
+            <div style="height:12px"></div>
+            ${info("Leader", u.leader || "No leader")}
+            ${info("Phone", u.phone || "No phone")}
+            ${info("Total Members", voters.length)}
+            ${info("Street Count", streets.length)}
+
+            <div style="height:12px"></div>
+            <div class="card compact" style="box-shadow:none;background:var(--surface-2)">
+              <strong>Map Placeholder</strong>
+              <p class="muted" style="margin-bottom:0">Geo-location mapping can be connected later.</p>
+            </div>
+
+            <div style="height:12px"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="showUnitForm(${i})">Edit</button>
+              <button class="btn btn-outline btn-sm" onclick="showPage('members')">Members</button>
+              <button class="btn btn-outline btn-sm" onclick="showPage('attendance')">Attendance</button>
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function showUnitForm(index = null){
+  if(!enforce("polling-units")) return;
+  const unit = index !== null ? getWard().units[index] : {name:"",num:"",code:"",leader:"",phone:""};
+
+  promptModal(
+    index !== null ? "Edit Polling Unit" : "Add Polling Unit",
+    [
+      {id:"u_num", label:"Unit Number", value:unit.num},
+      {id:"u_name", label:"Unit Name", value:unit.name},
+      {id:"u_code", label:"INEC Code / Location", value:unit.code},
+      {id:"u_leader", label:"Leader", value:unit.leader},
+      {id:"u_phone", label:"Leader Phone", value:unit.phone}
+    ],
+    values => {
+      const ward = getWard();
+      const num = values.u_num.trim().toUpperCase();
+      if(!num){
+        toast("Validation error", "Unit number is required.", "danger");
+        return;
+      }
+
+      const duplicate = ward.units.some((u,i) => i !== index && String(u.num).toLowerCase() === num.toLowerCase());
+      if(duplicate){
+        toast("Duplicate unit", "This polling unit already exists.", "danger");
+        return;
+      }
+
+      const data = {
+        name: values.u_name.trim() || values.u_code.trim() || `Unit ${num}`,
+        num,
+        code: values.u_code.trim(),
+        leader: titleCase(values.u_leader),
+        phone: values.u_phone.trim(),
+        streets: unit.streets || []
+      };
+
+      if(index !== null) ward.units[index] = data;
+      else ward.units.push(data);
+
+      if(!ward.voters[num]) ward.voters[num] = [];
+      save();
+      audit(index !== null ? "Polling unit updated" : "Polling unit created", {unit:num});
+      renderPollingUnits();
+      toast("Polling unit saved", `Unit ${num} is ready.`, "success");
+    }
+  );
+}
+
+/* =========================
+   STREETS
+   ========================= */
+
+function renderStreets(){
+  updateWardStreetSummary();
+  const streets = getWard().wardStreets || [];
+
+  document.getElementById("streets").innerHTML = `
+    <div class="searchbar">
+      <input class="input" placeholder="Search streets..." oninput="filterCards('street-card',this.value)" />
+      <button class="btn btn-primary" onclick="showStreetForm()">Add Street</button>
+    </div>
+
+    <div class="grid grid-3">
+      ${streets.map((s,i) => {
+        const members = allMembers().filter(m => String(m.street || "").toLowerCase() === String(s.name || "").toLowerCase());
+        const units = [...new Set(members.map(m=>m.unitNum))];
+        return `
+          <div class="card street-card" data-search="${escapeHtml(s.name.toLowerCase())}">
+            <h3 style="margin-top:0">${escapeHtml(s.name)}</h3>
+            ${info("Members", members.length)}
+            ${info("Polling Units", units.join(", ") || "None")}
+            ${info("Leader", s.leader || "Not assigned")}
+            <div style="height:12px"></div>
+            <div class="card compact" style="box-shadow:none;background:var(--surface-2)">
+              <strong>Map Placeholder</strong>
+              <p class="muted" style="margin-bottom:0">Street mapping and canvassing zones are future-ready.</p>
+            </div>
+            <div style="height:12px"></div>
+            <button class="btn btn-outline btn-sm" onclick="showStreetForm(${i})">Edit</button>
+          </div>
+        `;
+      }).join("") || `<div class="card">No streets added.</div>`}
+    </div>
+  `;
+}
+
+function showStreetForm(index = null){
+  const street = index !== null ? getWard().wardStreets[index] : {};
+  promptModal(
+    index !== null ? "Edit Street" : "Add Street",
+    [
+      {id:"s_name", label:"Street Name", value:street.name || ""},
+      {id:"s_leader", label:"Street Leader", value:street.leader || ""},
+      {id:"s_notes", label:"Notes", type:"textarea", value:street.notes || ""}
+    ],
+    values => {
+      const name = titleCase(values.s_name);
+      if(!name){
+        toast("Validation error", "Street name is required.", "danger");
+        return;
+      }
+
+      const ward = getWard();
+      const duplicate = ward.wardStreets.some((s,i)=>i !== index && s.name.toLowerCase() === name.toLowerCase());
+      if(duplicate){
+        toast("Duplicate street", "Street already exists.", "danger");
+        return;
+      }
+
+      const data = {name, leader:titleCase(values.s_leader), notes:values.s_notes.trim()};
+      if(index !== null) ward.wardStreets[index] = data;
+      else ward.wardStreets.push(data);
+
+      save();
+      audit(index !== null ? "Street updated" : "Street created", {street:name});
+      renderStreets();
+      toast("Street saved", name, "success");
+    }
+  );
+}
+
+/* =========================
+   EXECUTIVES
+   ========================= */
+
+function renderExecutives(){
+  const excos = getWard().excos || [];
+  document.getElementById("executives").innerHTML = `
+    <div class="searchbar">
+      <input class="input" placeholder="Search executives..." oninput="filterCards('exco-card',this.value)" />
+      <button class="btn btn-primary" onclick="showExcoForm()">Add Executive</button>
+    </div>
+
+    <div class="grid grid-3">
+      ${excos.map((e,i) => `
+        <div class="card exco-card" data-search="${escapeHtml(`${e.pos} ${e.name} ${e.phone}`.toLowerCase())}">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="kpi-icon">${escapeHtml((e.pos || "?").charAt(0))}</div>
+            <div>
+              <div class="muted">${escapeHtml(e.pos || "Position")}</div>
+              <h3 style="margin:0">${escapeHtml(e.name || "Vacant")}</h3>
+              <div>${escapeHtml(e.phone || "No phone")}</div>
+            </div>
+          </div>
+          <div style="height:14px"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="callPhone('${escapeHtml(e.phone || "")}')">Call</button>
+            <button class="btn btn-outline btn-sm" onclick="showExcoForm(${i})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteExco(${i})">Delete</button>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function showExcoForm(index = null){
+  const exco = index !== null ? getWard().excos[index] : {};
+  promptModal(
+    index !== null ? "Edit Executive" : "Add Executive",
+    [
+      {id:"e_pos", label:"Position", value:exco.pos || ""},
+      {id:"e_name", label:"Name", value:exco.name || ""},
+      {id:"e_phone", label:"Phone", value:exco.phone || ""}
+    ],
+    values => {
+      const pos = titleCase(values.e_pos);
+      const name = titleCase(values.e_name);
+      const phone = values.e_phone.trim();
+
+      if(!pos){
+        toast("Validation error", "Position is required.", "danger");
+        return;
+      }
+
+      const ward = getWard();
+      const duplicate = ward.excos.some((e,i)=>i !== index && e.pos.toLowerCase() === pos.toLowerCase());
+      if(duplicate){
+        toast("Duplicate position", "This executive position already exists.", "danger");
+        return;
+      }
+
+      const data = {pos,name,phone};
+      if(index !== null) ward.excos[index] = data;
+      else ward.excos.push(data);
+
+      save();
+      audit(index !== null ? "Executive updated" : "Executive created", {position:pos});
+      renderExecutives();
+      toast("Executive saved", pos, "success");
+    }
+  );
+}
+
+function deleteExco(index){
+  confirmModal("Delete Executive", "Delete this executive record?", () => {
+    const removed = getWard().excos.splice(index,1)[0];
+    save();
+    audit("Executive deleted", removed);
+    renderExecutives();
+    toast("Executive deleted", "", "success");
+  });
+}
+
+/* =========================
+   ATTENDANCE
+   ========================= */
+
+function getActiveSession(){
+  const ward = getWard();
+  const id = ward.activeAttendanceSession;
+  if(!id) return null;
+  return (ward.attendanceSessions || []).find(s => s.id === id) || null;
+}
+
+function renderAttendance(){
+  const ward = getWard();
+  const sessions = ward.attendanceSessions || [];
+  const active = getActiveSession();
+
+  document.getElementById("attendance").innerHTML = `
+    <div class="grid grid-4">
+      ${kpiCard("Sessions", sessions.length, "📅")}
+      ${kpiCard("Returning", sessions.reduce((n,s)=>n+(s.returning || []).length,0), "👥")}
+      ${kpiCard("New Members", sessions.reduce((n,s)=>n+(s.newMembers || []).length,0), "✨")}
+      ${kpiCard("Active", active ? "Yes" : "No", "✅")}
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h3 style="margin:0">Attendance Control</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="startAttendanceSession()">Start Attendance</button>
+          <button class="btn btn-outline" onclick="closeAttendanceSession()">Close Attendance</button>
+          <button class="btn btn-outline" onclick="openQRScanner()">Scan QR</button>
+          <button class="btn btn-outline" onclick="manualAttendance()">Manual Attendance</button>
+          <button class="btn btn-gold" onclick="exportAttendanceCSV()">Export CSV</button>
+          <button class="btn btn-outline" onclick="exportAttendancePDF()">Print PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="grid">
+      ${sessions.slice().reverse().map(sessionCard).join("") || `<div class="card">No attendance sessions yet.</div>`}
+    </div>
+  `;
+}
+
+function sessionCard(session){
+  const returning = session.returning || [];
+  const newMembers = session.newMembers || [];
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <h3 style="margin:0">${escapeHtml(session.title)}</h3>
+          <p class="muted" style="margin:4px 0">${escapeHtml(session.date || "")} · ${escapeHtml(session.venue || "No venue")}</p>
+        </div>
+        <span class="badge ${session.status === "active" ? "badge-success" : "badge-danger"}">${escapeHtml(session.status || "closed")}</span>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="grid grid-3">
+        ${info("Returning Members", returning.length)}
+        ${info("New Members", newMembers.length)}
+        ${info("Total Attendance", returning.length + newMembers.length)}
+      </div>
+
+      <div style="height:12px"></div>
+      <details>
+        <summary style="font-weight:900;cursor:pointer">View Attendees</summary>
+        <div class="table-wrap" style="margin-top:12px">
+          <table>
+            <thead><tr><th>Category</th><th>Name</th><th>Phone</th><th>Time</th><th>Method</th></tr></thead>
+            <tbody>
+              ${returning.map(a=>attRow("Returning",a)).join("")}
+              ${newMembers.map(a=>attRow("New",a)).join("")}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  `;
+}
+
+function attRow(category,a){
+  return `<tr><td>${category}</td><td>${escapeHtml(a.name)}</td><td>${escapeHtml(a.phone)}</td><td>${escapeHtml(a.time)}</td><td>${a.qrVerified ? "QR" : "Manual"}</td></tr>`;
+}
+
+function startAttendanceSession(){
+  const meetingTypes = ["Ward Meeting","Ward Excos Meeting","General Ward Meeting","Campaign Meeting","Stakeholders Meeting","Custom Meeting"];
+  const body = `
+    <label class="label">Meeting Type</label>
+    <select id="att_type" class="select">
+      ${meetingTypes.map(t=>`<option>${t}</option>`).join("")}
+    </select>
+    <div style="height:12px"></div>
+    <label class="label">Custom Title</label>
+    <input id="att_custom" class="input" placeholder="Only needed for custom meeting" />
+    <div style="height:12px"></div>
+    <label class="label">Venue</label>
+    <input id="att_venue" class="input" placeholder="Meeting venue" />
+  `;
+
+  const fn = "startAtt_" + Date.now();
+  window[fn] = () => {
+    let title = document.getElementById("att_type").value;
+    const custom = document.getElementById("att_custom").value.trim();
+    if(title === "Custom Meeting" && custom) title = custom;
+
+    const session = {
+      id: makeId("ATT"),
+      title,
+      venue: document.getElementById("att_venue").value.trim(),
+      date: new Date().toLocaleDateString(),
+      createdAt: new Date().toISOString(),
+      status:"active",
+      returning:[],
+      newMembers:[],
+      approvals:[],
+      corrections:[]
+    };
+
+    const ward = getWard();
+    ward.attendanceSessions.push(session);
+    ward.activeAttendanceSession = session.id;
+
+    save();
+    audit("Attendance started", {title});
+    closeModal();
+    renderAttendance();
+    toast("Attendance started", title, "success");
+  };
+
+  openModal("Start Attendance", body, `<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="${fn}()">Start</button>`);
+}
+
+function closeAttendanceSession(){
+  const session = getActiveSession();
+  if(!session){
+    toast("No active session", "Start attendance first.", "warning");
+    return;
+  }
+
+  confirmModal("Close Attendance", `Close ${session.title}?`, () => {
+    session.status = "closed";
+    session.closedAt = new Date().toISOString();
+    getWard().activeAttendanceSession = null;
+    save();
+    audit("Attendance closed", {title:session.title});
+    renderAttendance();
+    toast("Attendance closed", session.title, "success");
+  });
+}
+
+function autoMarkAttendance(member){
+  const session = getActiveSession();
+  if(!session){
+    toast("Start attendance first", "No active attendance session.", "warning");
+    return;
+  }
+
+  const phone = normalizePhone(member.phone);
+  const exists = [...(session.returning || []), ...(session.newMembers || [])]
+    .some(a => normalizePhone(a.phone) === phone && phone);
+
+  if(exists){
+    toast("Already marked", member.name || member.phone, "warning");
+    return;
+  }
+
+  session.returning.push({
+    id: makeId("RET"),
+    memberId: member.id || member.qrId,
+    name: member.name,
+    phone: member.phone,
+    unit: member.unitNum,
+    time: nowTime(),
+    checkIn: new Date().toISOString(),
+    qrVerified: !!member.qrVerified
+  });
+
+  const actual = findMemberById(member.id || member.qrId);
+  if(actual){
+    getWard().voters[actual.unitNum][actual.index].lastAttendance = new Date().toLocaleDateString();
+  }
+
+  save();
+  audit("Attendance marked", {member:member.name});
+  renderAttendance();
+  toast("Attendance marked", member.name || "Member", "success");
+}
+
+function manualAttendance(){
+  const members = allMembers();
+  const options = members.map(m => `<option value="${escapeHtml(m.id || m.qrId)}">${escapeHtml(m.name || "Unnamed")} · ${escapeHtml(m.phone || "")} · Unit ${escapeHtml(m.unitNum)}</option>`).join("");
+
+  const body = `
+    <label class="label">Select Member</label>
+    <select id="manual_member" class="select">${options}</select>
+    <div style="height:12px"></div>
+    <label class="label">Status</label>
+    <select id="manual_status" class="select">
+      <option>Present</option>
+      <option>Late Arrival</option>
+      <option>Correction</option>
+    </select>
+  `;
+
+  const fn = "manualAtt_" + Date.now();
+  window[fn] = () => {
+    const member = findMemberById(document.getElementById("manual_member").value);
+    if(member){
+      autoMarkAttendance(member);
+      closeModal();
+    }
+  };
+
+  openModal("Manual Attendance", body, `<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="${fn}()">Mark Present</button>`);
+}
+
+function openQRScanner(){
+  document.getElementById("qrScannerModal").classList.add("show");
+  if(!window.Html5Qrcode){
+    toast("Scanner unavailable", "QR scanner library is not loaded.", "danger");
+    return;
+  }
+
+  html5QrCode = new Html5Qrcode("qr-reader");
+  Html5Qrcode.getCameras()
+    .then(devices => {
+      if(devices && devices.length){
+        html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},onScanSuccess);
+      }
+    })
+    .catch(err => toast("Camera error", String(err), "danger"));
+}
+
+function closeQRScanner(){
+  document.getElementById("qrScannerModal").classList.remove("show");
+  if(html5QrCode){
+    html5QrCode.stop().then(() => {
+      document.getElementById("qr-reader").innerHTML = "";
+      html5QrCode = null;
+    }).catch(()=>{});
+  }
+}
+
+function onScanSuccess(decodedText){
+  try{
+    const data = JSON.parse(decodedText);
+    const member = findMemberById(data.id || data.qrId || data.membershipNumber);
+    if(!member){
+      toast("Member not found", "QR code is valid but not in this ward.", "danger");
+      return;
+    }
+    member.qrVerified = true;
+    autoMarkAttendance(member);
+    closeQRScanner();
+  }catch(e){
+    toast("Invalid QR", "This is not a valid PWMS QR code.", "danger");
+  }
+}
+
+/* =========================
+   MEETINGS, CAMPAIGNS, COMMS
+   ========================= */
+
+function renderMeetings(){
+  const meetings = getWard().meetings || [];
+  document.getElementById("meetings").innerHTML = `
+    <div class="searchbar">
+      <input class="input" placeholder="Search meetings..." oninput="filterCards('meeting-card',this.value)" />
+      <button class="btn btn-primary" onclick="showMeetingForm()">Create Meeting</button>
+    </div>
+    <div class="grid grid-3">
+      ${meetings.map((m,i)=>`
+        <div class="card meeting-card" data-search="${escapeHtml(`${m.title} ${m.date} ${m.venue}`.toLowerCase())}">
+          <span class="badge badge-blue">${escapeHtml(m.status || "Scheduled")}</span>
+          <h3>${escapeHtml(m.title)}</h3>
+          ${info("Date",m.date)}
+          ${info("Venue",m.venue)}
+          ${info("Agenda",m.agenda)}
+          <div style="height:12px"></div>
+          <button class="btn btn-outline btn-sm" onclick="showMeetingForm(${i})">Edit</button>
+          <button class="btn btn-outline btn-sm" onclick="printMeeting(${i})">Report</button>
+        </div>
+      `).join("") || `<div class="card">No meetings created.</div>`}
+    </div>
+  `;
+}
+
+function showMeetingForm(index = null){
+  const m = index !== null ? getWard().meetings[index] : {};
+  promptModal(
+    index !== null ? "Edit Meeting" : "Create Meeting",
+    [
+      {id:"meet_title", label:"Meeting Title", value:m.title || ""},
+      {id:"meet_date", label:"Date", type:"date", value:m.date || ""},
+      {id:"meet_venue", label:"Venue", value:m.venue || ""},
+      {id:"meet_agenda", label:"Agenda", type:"textarea", value:m.agenda || ""},
+      {id:"meet_minutes", label:"Minutes", type:"textarea", value:m.minutes || ""},
+      {id:"meet_actions", label:"Action Points", type:"textarea", value:m.actions || ""}
+    ],
+    values => {
+      if(!values.meet_title.trim()){
+        toast("Validation error", "Meeting title is required.", "danger");
+        return;
+      }
+
+      const data = {
+        id:m.id || makeId("MTG"),
+        title:values.meet_title.trim(),
+        date:values.meet_date,
+        venue:values.meet_venue.trim(),
+        agenda:values.meet_agenda.trim(),
+        minutes:values.meet_minutes.trim(),
+        actions:values.meet_actions.trim(),
+        status:m.status || "Scheduled",
+        createdAt:m.createdAt || new Date().toISOString(),
+        updatedAt:new Date().toISOString()
+      };
+
+      if(index !== null) getWard().meetings[index] = data;
+      else getWard().meetings.push(data);
+
+      save();
+      audit(index !== null ? "Meeting updated" : "Meeting created", {title:data.title});
+      renderMeetings();
+      toast("Meeting saved", data.title, "success");
+    }
+  );
+}
+
+function printMeeting(index){
+  const m = getWard().meetings[index];
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <html><head><title>Meeting Report</title>
+    <style>body{font-family:Arial;padding:24px}h1{color:#0B3D91}section{margin-bottom:18px}</style></head>
+    <body>
+      <h1>PWMS Meeting Report</h1>
+      <section><strong>Ward:</strong> ${escapeHtml(currentWard)}</section>
+      <section><strong>Title:</strong> ${escapeHtml(m.title)}</section>
+      <section><strong>Date:</strong> ${escapeHtml(m.date)}</section>
+      <section><strong>Venue:</strong> ${escapeHtml(m.venue)}</section>
+      <section><h3>Agenda</h3><p>${escapeHtml(m.agenda)}</p></section>
+      <section><h3>Minutes</h3><p>${escapeHtml(m.minutes)}</p></section>
+      <section><h3>Action Points</h3><p>${escapeHtml(m.actions)}</p></section>
+    </body></html>
+  `);
+  win.document.close();
+  win.print();
+}
+
+function renderCampaigns(){
+  const campaigns = getWard().campaigns || [];
+  document.getElementById("campaigns").innerHTML = `
+    <div class="searchbar">
+      <input class="input" placeholder="Search campaigns..." oninput="filterCards('campaign-card',this.value)" />
+      <button class="btn btn-primary" onclick="showCampaignForm()">Create Campaign</button>
+    </div>
+    <div class="grid grid-3">
+      ${campaigns.map((c,i)=>`
+        <div class="card campaign-card" data-search="${escapeHtml(`${c.name} ${c.coordinator}`.toLowerCase())}">
+          <span class="badge badge-gold">${escapeHtml(c.status || "Active")}</span>
+          <h3>${escapeHtml(c.name)}</h3>
+          ${info("Coordinator",c.coordinator)}
+          ${info("Duration",`${c.start || ""} - ${c.end || ""}`)}
+          ${info("Assigned Members",(c.members || []).length)}
+          ${info("Performance",c.performance || "Pending")}
+          <div style="height:12px"></div>
+          <button class="btn btn-outline btn-sm" onclick="showCampaignForm(${i})">Edit</button>
+        </div>
+      `).join("") || `<div class="card">No campaigns created.</div>`}
+    </div>
+  `;
+}
+
+function showCampaignForm(index = null){
+  const c = index !== null ? getWard().campaigns[index] : {};
+  promptModal(
+    index !== null ? "Edit Campaign" : "Create Campaign",
+    [
+      {id:"camp_name", label:"Campaign Name", value:c.name || ""},
+      {id:"camp_coord", label:"Coordinator", value:c.coordinator || ""},
+      {id:"camp_start", label:"Start Date", type:"date", value:c.start || ""},
+      {id:"camp_end", label:"End Date", type:"date", value:c.end || ""},
+      {id:"camp_notes", label:"Follow-up Notes", type:"textarea", value:c.notes || ""}
+    ],
+    values => {
+      if(!values.camp_name.trim()){
+        toast("Validation error", "Campaign name is required.", "danger");
+        return;
+      }
+
+      const data = {
+        id:c.id || makeId("CMP"),
+        name:values.camp_name.trim(),
+        coordinator:titleCase(values.camp_coord),
+        start:values.camp_start,
+        end:values.camp_end,
+        notes:values.camp_notes.trim(),
+        members:c.members || [],
+        performance:c.performance || "Pending",
+        status:c.status || "Active",
+        createdAt:c.createdAt || new Date().toISOString()
+      };
+
+      if(index !== null) getWard().campaigns[index] = data;
+      else getWard().campaigns.push(data);
+
+      save();
+      audit(index !== null ? "Campaign updated" : "Campaign created", {name:data.name});
+      renderCampaigns();
+      toast("Campaign saved", data.name, "success");
+    }
+  );
+}
+
+let communicationSelectionState = {
+  search: "",
+  selectedMembers: [],
+  selectedExecutives: [],
+  sendEveryone: false
+};
+
+function setCommunicationSearch(value){
+  communicationSelectionState.search = String(value || "");
+  renderCommunications();
+}
+
+function getCommunicationMembersData(){
+  return allMembers().map(m => ({
+    id: m.id || m.qrId || makeId("MBR"),
+    name: m.name || "Unnamed Member",
+    phone: m.phone || "",
+    unit: m.unitNum || "",
+    type: "member"
+  }));
+}
+
+function getCommunicationExecutivesData(){
+  return (getWard().excos || []).map((e, index) => ({
+    id: `exec-${index}`,
+    name: e.name || "Unnamed Executive",
+    phone: e.phone || "",
+    position: e.pos || "",
+    type: "executive"
+  }));
+}
+
+function toggleCommunicationMemberSelection(id){
+  if(!id) return;
+  const selected = communicationSelectionState.selectedMembers;
+  communicationSelectionState.selectedMembers = selected.includes(id)
+    ? selected.filter(item => item !== id)
+    : [...selected, id];
+  renderCommunications();
+}
+
+function toggleCommunicationExecutiveSelection(id){
+  if(!id) return;
+  const selected = communicationSelectionState.selectedExecutives;
+  communicationSelectionState.selectedExecutives = selected.includes(id)
+    ? selected.filter(item => item !== id)
+    : [...selected, id];
+  renderCommunications();
+}
+
+function toggleCommunicationSelectAllMembers(){
+  const members = getCommunicationMembersData();
+  communicationSelectionState.selectedMembers = communicationSelectionState.selectedMembers.length === members.length && members.length
+    ? []
+    : members.map(m => m.id);
+  renderCommunications();
+}
+
+function toggleCommunicationSelectAllExecutives(){
+  const executives = getCommunicationExecutivesData();
+  communicationSelectionState.selectedExecutives = communicationSelectionState.selectedExecutives.length === executives.length && executives.length
+    ? []
+    : executives.map(e => e.id);
+  renderCommunications();
+}
+
+function toggleCommunicationSendEveryone(){
+  communicationSelectionState.sendEveryone = !communicationSelectionState.sendEveryone;
+  if(communicationSelectionState.sendEveryone){
+    communicationSelectionState.selectedMembers = getCommunicationMembersData().map(m => m.id);
+    communicationSelectionState.selectedExecutives = getCommunicationExecutivesData().map(e => e.id);
+  }
+  renderCommunications();
+}
+
+function normalizeCommunicationPhone(phone){
+  if(!phone) return "";
+  const cleaned = String(phone).replace(/[^\d+]/g, "");
+  if(!cleaned) return "";
+  return cleaned.startsWith("+") ? cleaned : cleaned.replace(/^0/, "234");
+}
+
+function getCommunicationRecipients(){
+  const members = getCommunicationMembersData();
+  const executives = getCommunicationExecutivesData();
+  const selectedMembers = communicationSelectionState.sendEveryone
+    ? members.map(m => m.id)
+    : communicationSelectionState.selectedMembers;
+  const selectedExecutives = communicationSelectionState.sendEveryone
+    ? executives.map(e => e.id)
+    : communicationSelectionState.selectedExecutives;
+
+  const recipients = [];
+  const seen = new Set();
+
+  members.forEach(member => {
+    if(!selectedMembers.includes(member.id)) return;
+    const normalized = normalizeCommunicationPhone(member.phone);
+    if(!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    recipients.push({
+      ...member,
+      normalizedPhone: normalized
+    });
+  });
+
+  executives.forEach(executive => {
+    if(!selectedExecutives.includes(executive.id)) return;
+    const normalized = normalizeCommunicationPhone(executive.phone);
+    if(!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    recipients.push({
+      ...executive,
+      normalizedPhone: normalized
+    });
+  });
+
+  return recipients;
+}
+
+function smsPagesForLength(length){
+  if(length <= 160) return 1;
+  return Math.ceil((length - 160) / 153) + 1;
+}
+
+function formatNGNCurrency(amount){
+  return `₦${Number(amount || 0).toFixed(2)}`;
+}
+
+function getCommunicationSelectionCounts(){
+  const members = getCommunicationMembersData();
+  const executives = getCommunicationExecutivesData();
+  const selectedMembers = communicationSelectionState.sendEveryone
+    ? members.length
+    : communicationSelectionState.selectedMembers.filter(id => members.some(m => m.id === id)).length;
+  const selectedExecutives = communicationSelectionState.sendEveryone
+    ? executives.length
+    : communicationSelectionState.selectedExecutives.filter(id => executives.some(e => e.id === id)).length;
+
+  return { selectedMembersCount: selectedMembers, selectedExecutivesCount: selectedExecutives };
+}
+
+function openCommunicationPreview(channel, message, recipients){
+  const { selectedMembersCount, selectedExecutivesCount } = getCommunicationSelectionCounts();
+  const messageLength = message.length;
+  const smsPages = smsPagesForLength(messageLength);
+  const estimatedCost = recipients.length * smsPages * SMS_PRICE;
+
+  window.broadcastPreview = { channel, message, recipients };
+
+  const rows = recipients.map(recipient => `
+      <tr>
+        <td>${escapeHtml(recipient.name)}</td>
+        <td>${escapeHtml(recipient.phone || "")}</td>
+        <td>${recipient.type === "executive" ? "Executive" : "Member"}</td>
+        <td>${escapeHtml(recipient.unit || recipient.position || "")}</td>
+      </tr>
+  `).join("");
+
+  openModal(
+    "Review recipients before sending",
+    `
+      <div class="grid grid-2" style="gap:12px;margin-bottom:16px">
+        <div class="card compact" style="box-shadow:none;background:var(--surface-2);padding:14px">
+          <strong>Recipient Preview</strong>
+          <div class="muted" style="margin-top:10px">Total Selected Members: ${selectedMembersCount}</div>
+          <div class="muted">Total Selected Executives: ${selectedExecutivesCount}</div>
+          <div class="muted">Total Unique Phone Numbers: ${recipients.length}</div>
+        </div>
+        <div class="card compact" style="box-shadow:none;background:var(--surface-2);padding:14px">
+          <strong>SMS Summary</strong>
+          <div class="muted" style="margin-top:10px">Message Length: ${messageLength} characters</div>
+          <div class="muted">SMS Pages Required: ${smsPages}</div>
+          <div class="muted">Estimated Cost: ${formatNGNCurrency(estimatedCost)}</div>
+        </div>
+      </div>
+      <div class="table-wrap" style="max-height:320px;overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone Number</th>
+              <th>Category</th>
+              <th>Polling Unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || `<tr><td colspan="4" class="muted">No recipients available.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    `,
+    `<button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" onclick="confirmBroadcast()">Confirm & Send</button>`
+  );
+}
+
+function confirmBroadcast(){
+  const preview = window.broadcastPreview;
+  if(!preview){
+    closeModal();
+    return;
+  }
+  const { channel, message, recipients } = preview;
+  delete window.broadcastPreview;
+
+  recipients.forEach(recipient => {
+    const text = personalize(message, {
+      name: recipient.name,
+      phone: recipient.phone,
+      street: recipient.unit || "",
+      unit: recipient.unit || recipient.position || ""
+    });
+    if(channel === "WhatsApp") sendWhatsApp(recipient.phone, recipient.name, text);
+    else if(channel === "Phone SMS") {
+      window.location.href = `sms:${recipient.phone}?body=${encodeURIComponent(text)}`;
+    }
+    else if(channel === "Bulk SMS") {
+      const smsSettings = getSMSSettings();
+      const backendConfigured = BACKEND_URL && !String(BACKEND_URL).includes('your-backend.example.com');
+      if(!backendConfigured){
+        window.location.href = `sms:${recipient.phone}?body=${encodeURIComponent(text)}`;
+        toast("Bulk SMS fallback", "Using the device SMS composer because the backend endpoint is not configured yet.", "warning");
+      } else {
+        sendSMSViaBackend({
+          phone: recipient.phone,
+          message: text,
+          senderId: smsSettings.senderId,
+          provider: smsSettings.provider
+        }).catch(err => {
+          window.location.href = `sms:${recipient.phone}?body=${encodeURIComponent(text)}`;
+          toast("Bulk SMS failed", err.message || "Falling back to the device SMS composer.", "warning");
+        });
+      }
+    }
+  });
+
+  getWard().communications.push({
+    id:makeId("COM"),
+    channel,
+    message,
+    count:recipients.length,
+    at:new Date().toISOString()
+  });
+
+  save();
+  audit("Broadcast sent", {channel,count:recipients.length});
+  toast("Broadcast started", `${recipients.length} unique recipient(s) prepared.`, "success");
+  closeModal();
+}
+
+function renderCommunications(){
+  const members = getCommunicationMembersData();
+  const executives = getCommunicationExecutivesData();
+  const search = String(communicationSelectionState.search || "").trim().toLowerCase();
+
+  const filteredMembers = members.filter(m => {
+    if(!search) return true;
+    return `${m.name} ${m.phone} ${m.unit}`.toLowerCase().includes(search);
+  });
+
+  const filteredExecutives = executives.filter(e => {
+    if(!search) return true;
+    return `${e.name} ${e.phone} ${e.position}`.toLowerCase().includes(search);
+  });
+
+  const memberRows = filteredMembers.length
+    ? filteredMembers.map(m => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" ${communicationSelectionState.selectedMembers.includes(m.id) ? "checked" : ""} onchange="toggleCommunicationMemberSelection('${escapeHtml(m.id)}')" />
+          <span style="flex:1">
+            <strong>${escapeHtml(m.name)}</strong><br>
+            <span class="muted" style="font-size:.78rem">${escapeHtml(m.phone || "No phone")}${m.unit ? ` · Unit ${escapeHtml(m.unit)}` : ""}</span>
+          </span>
+        </label>
+      `).join("")
+    : `<div class="muted">No members match this search.</div>`;
+
+  const executiveRows = filteredExecutives.length
+    ? filteredExecutives.map(e => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" ${communicationSelectionState.selectedExecutives.includes(e.id) ? "checked" : ""} onchange="toggleCommunicationExecutiveSelection('${escapeHtml(e.id)}')" />
+          <span style="flex:1">
+            <strong>${escapeHtml(e.name)}</strong><br>
+            <span class="muted" style="font-size:.78rem">${escapeHtml(e.position || "Executive")}${e.phone ? ` · ${escapeHtml(e.phone)}` : ""}</span>
+          </span>
+        </label>
+      `).join("")
+    : `<div class="muted">No executives match this search.</div>`;
+
+  const recipientCount = getCommunicationRecipients().length;
+  const selectedMembersCount = communicationSelectionState.sendEveryone ? members.length : communicationSelectionState.selectedMembers.filter(id => members.some(m => m.id === id)).length;
+  const selectedExecutivesCount = communicationSelectionState.sendEveryone ? executives.length : communicationSelectionState.selectedExecutives.filter(id => executives.some(e => e.id === id)).length;
+
+  document.getElementById("communications").innerHTML = `
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 class="card-title">Broadcast Center</h3>
+        <label class="label">Channel</label>
+        <select id="comm_channel" class="select">
+          <option>WhatsApp</option>
+          <option>Phone SMS</option>
+          <option>Bulk SMS</option>
+          <option>Email Future Ready</option>
+        </select>
+        <div style="height:12px"></div>
+        <label class="label">Template</label>
+        <textarea id="comm_message" class="textarea" placeholder="Use {name}, {phone}, {street}, {unit}"></textarea>
+        <div style="height:12px"></div>
+        <label style="display:flex;align-items:center;gap:8px;color:#475569;font-size:.9rem">
+          <input type="checkbox" ${communicationSelectionState.sendEveryone ? "checked" : ""} onchange="toggleCommunicationSendEveryone()" />
+          Send to Everyone
+        </label>
+        <div style="height:12px"></div>
+        <div class="card compact" style="box-shadow:none;background:var(--surface-2)">
+          <strong>Recipient Summary</strong>
+          <div class="muted" style="margin-top:6px">Selected Members: ${selectedMembersCount}</div>
+          <div class="muted">Selected Executives: ${selectedExecutivesCount}</div>
+          <div class="muted">Total Unique Recipients: ${recipientCount}</div>
+        </div>
+        <div style="height:12px"></div>
+        <button class="btn btn-primary" onclick="sendBroadcast()">Send To Selected Recipients</button>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Templates</h3>
+        <div class="grid">
+          <button class="btn btn-outline" onclick="setTemplate('Hello {name}, this is a reminder from ${currentWard} Ward.')">Meeting Reminder</button>
+          <button class="btn btn-outline" onclick="setTemplate('Dear {name}, thank you for attending today.')">Attendance Thanks</button>
+          <button class="btn btn-outline" onclick="setTemplate('Hello {name}, please confirm your polling unit: {unit}.')">Polling Unit Confirmation</button>
+        </div>
+        <div style="height:16px"></div>
+        <label class="label">Search Recipients</label>
+        <input class="input" value="${escapeHtml(communicationSelectionState.search)}" placeholder="Search by name, phone, unit or position" oninput="setCommunicationSearch(this.value)" />
+        <div style="height:12px"></div>
+        <div class="grid grid-2">
+          <div class="card compact" style="box-shadow:none;background:var(--surface-2)">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <strong>Members</strong>
+              <label style="display:flex;align-items:center;gap:6px;font-size:.8rem">
+                <input type="checkbox" ${selectedMembersCount === members.length && members.length ? "checked" : ""} onchange="toggleCommunicationSelectAllMembers()" />
+                Select All Members
+              </label>
+            </div>
+            <div style="max-height:220px;overflow:auto;margin-top:8px">${memberRows}</div>
+          </div>
+          <div class="card compact" style="box-shadow:none;background:var(--surface-2)">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <strong>Executives</strong>
+              <label style="display:flex;align-items:center;gap:6px;font-size:.8rem">
+                <input type="checkbox" ${selectedExecutivesCount === executives.length && executives.length ? "checked" : ""} onchange="toggleCommunicationSelectAllExecutives()" />
+                Select All Executives
+              </label>
+            </div>
+            <div style="max-height:220px;overflow:auto;margin-top:8px">${executiveRows}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="card">
+      <h3 class="card-title">Delivery Logs</h3>
+      ${emptyOrList((getWard().communications || []).slice().reverse(), c => `
+        <div class="timeline-item">
+          <strong>${escapeHtml(c.channel)}</strong>
+          <div class="muted">${escapeHtml(c.message)} · ${new Date(c.at).toLocaleString()}</div>
+        </div>
+      `)}
+    </div>
+  `;
+}
+
+function setTemplate(text){
+  document.getElementById("comm_message").value = text;
+}
+
+function selectedMembers(){
+  return allMembers().filter(m => m.selected);
+}
+
+function personalize(template,m){
+  return template
+    .replaceAll("{name}",m.name || "")
+    .replaceAll("{phone}",m.phone || "")
+    .replaceAll("{street}",m.street || "")
+    .replaceAll("{unit}",m.unitNum || "");
+}
+
+function sendBroadcast(){
+  const channel = document.getElementById("comm_channel").value;
+  const message = document.getElementById("comm_message").value.trim();
+  const recipients = getCommunicationRecipients();
+
+  if(!message){
+    toast("Please enter a message.", "", "danger");
+    return;
+  }
+
+  if(!recipients.length){
+    toast("No recipients selected.", "", "warning");
+    return;
+  }
+
+  openCommunicationPreview(channel, message, recipients);
+}
+
+/* =========================
+   REPORTS AND EXPORTS
+   ========================= */
+
+function renderReports(){
+  const stats = wardStats();
+  document.getElementById("reports").innerHTML = `
+    <div class="grid grid-4">
+      ${kpiCard("Members",stats.totalMembers,"👥")}
+      ${kpiCard("Attendance",stats.returning + stats.newMembers,"✅")}
+      ${kpiCard("Units",stats.totalUnits,"🏛️")}
+      ${kpiCard("Streets",stats.totalStreets,"🛣️")}
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="grid grid-3">
+      ${reportCard("Members Report","Export all member records.","exportMembersCSV()","CSV")}
+      ${reportCard("Attendance Report","Export attendance history.","exportAttendanceCSV()","CSV")}
+      ${reportCard("Ward Summary","Print executive summary.","printWardSummary()","Print")}
+      ${reportCard("Polling Units","Compare unit strength.","showPage('polling-units')","Open")}
+      ${reportCard("Inactive Members","Future-ready inactivity report.","toast('Report ready','Connect attendance thresholds in Settings.','info')","Preview")}
+      ${reportCard("Demographics","Age, gender and occupation analytics.","toast('Analytics ready','Add demographic fields to member records.','info')","Preview")}
+    </div>
+  `;
+}
+
+function reportCard(title,desc,action,label){
+  return `
+    <div class="card">
+      <h3>${escapeHtml(title)}</h3>
+      <p class="muted">${escapeHtml(desc)}</p>
+      <button class="btn btn-primary btn-sm" onclick="${action}">${escapeHtml(label)}</button>
+    </div>
+  `;
+}
+
+function exportMembersCSV(){
+  const rows = [["Name","Phone","Street","Ward","Polling Unit","Membership Number","Support Level","Status"]];
+  allMembers().forEach(m => rows.push([
+    m.name || "", m.phone || "", m.street || "", currentWard, m.unitNum || "",
+    m.membershipNumber || m.id || "", m.supportLevel || "", m.status || ""
+  ]));
+  downloadCSV(`${currentWard}_members.csv`, rows);
+  audit("Members CSV exported");
+}
+
+function exportAttendanceCSV(){
+  const rows = [["Session","Date","Category","Name","Phone","Unit","Time","Method"]];
+  (getWard().attendanceSessions || []).forEach(s => {
+    (s.returning || []).forEach(a => rows.push([s.title,s.date,"Returning",a.name || "",a.phone || "",a.unit || "",a.time || "",a.qrVerified ? "QR" : "Manual"]));
+    (s.newMembers || []).forEach(a => rows.push([s.title,s.date,"New",a.name || "",a.phone || "",a.unit || "",a.time || "",a.qrVerified ? "QR" : "Manual"]));
+  });
+  downloadCSV(`${currentWard}_attendance.csv`, rows);
+  audit("Attendance CSV exported");
+}
+
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv],{type:"text/csv"});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function exportAttendancePDF(){
+  printWardSummary("attendance");
+}
+
+function printWardSummary(mode = "summary"){
+  const stats = wardStats();
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <html><head><title>PWMS Ward Report</title>
+    <style>
+      body{font-family:Arial;padding:24px;color:#111827}
+      h1{color:#0B3D91}
+      .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+      .card{border:1px solid #ddd;padding:14px;border-radius:8px}
+      table{width:100%;border-collapse:collapse;margin-top:20px}
+      td,th{border:1px solid #ddd;padding:8px;text-align:left}
+      th{background:#0B3D91;color:white}
+    </style></head><body>
+      <h1>Political Ward Management System</h1>
+      <h2>${escapeHtml(currentWard)} Ward Report</h2>
+      <div class="grid">
+        <div class="card"><strong>${stats.totalMembers}</strong><br>Members</div>
+        <div class="card"><strong>${stats.totalUnits}</strong><br>Polling Units</div>
+        <div class="card"><strong>${stats.totalStreets}</strong><br>Streets</div>
+        <div class="card"><strong>${stats.totalExcos}</strong><br>Executives</div>
+      </div>
+      <table>
+        <tr><th>Name</th><th>Phone</th><th>Street</th><th>Unit</th></tr>
+        ${allMembers().map(m=>`<tr><td>${escapeHtml(m.name)}</td><td>${escapeHtml(m.phone)}</td><td>${escapeHtml(m.street)}</td><td>${escapeHtml(m.unitNum)}</td></tr>`).join("")}
+      </table>
+    </body></html>
+  `);
+  win.document.close();
+  win.print();
+}
+
+/* =========================
+   SETTINGS, SECURITY, BACKUP
+   ========================= */
+
+function sendSMSViaBackend(payload){
+  return fetch(`${BACKEND_URL}/api/sms`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(async response => {
+    const text = await response.text();
+    let data = null;
+    try{ data = text ? JSON.parse(text) : null; }catch(e){}
+    if(!response.ok) throw new Error((data && data.error) || 'SMS request failed.');
+    return data;
+  });
+}
+
+function getSMSSettings(){
+  const settings = (getWard().settings || {});
+  return {
+    provider: settings.smsProvider || "Termii",
+    pricePerSMS: Number(settings.smsPricePerPage) > 0 ? Number(settings.smsPricePerPage) : 6.50,
+    currency: settings.smsCurrency || "NGN",
+    senderId: settings.smsSenderId || "PWMS"
+  };
+}
+
+function saveSMSSettings(){
+  const provider = document.getElementById("sms_provider").value;
+  const price = Number(document.getElementById("sms_price").value);
+  const currency = document.getElementById("sms_currency").value;
+  const senderId = String(document.getElementById("sms_sender").value || "").trim();
+
+  if(price <= 0 || Number.isNaN(price)){
+    toast("Invalid SMS cost", "Cost Per SMS Page must be greater than zero.", "danger");
+    return;
+  }
+
+  if(!senderId){
+    toast("Sender ID required", "Sender ID cannot be empty.", "danger");
+    return;
+  }
+
+  if(senderId.length > 11){
+    toast("Sender ID too long", "Sender ID must be 11 characters or fewer.", "danger");
+    return;
+  }
+
+  const ward = getWard();
+  ward.settings = ward.settings || {};
+  ward.settings.smsProvider = provider;
+  ward.settings.smsPricePerPage = Number(price.toFixed(2));
+  ward.settings.smsCurrency = currency;
+  ward.settings.smsSenderId = senderId;
+
+  save();
+  toast("SMS settings saved", "SMS Configuration has been updated.", "success");
+}
+
+function renderSettings(){
+  const smsSettings = getSMSSettings();
+
+  document.getElementById("settings").innerHTML = `
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 class="card-title">Ward Settings</h3>
+        <label class="label">Current Ward</label>
+        <select id="settingsWard" class="select" onchange="switchWardFromSettings(this.value)">
+          ${WARD_LIST.map(w=>`<option value="${w}" ${w===currentWard?"selected":""}>${w} Ward</option>`).join("")}
+        </select>
+        <div style="height:12px"></div>
+        <button class="btn btn-outline" onclick="toggleTheme()">Toggle Dark Mode</button>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">About</h3>
+        <p><strong>Political Ward Management System</strong></p>
+        <p class="muted">Professional Political Administration Platform</p>
+        <p class="muted">Single-file compatibility build. Future-ready for React, TypeScript, Supabase Auth and RLS.</p>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="card">
+      <h3 class="card-title">SMS Configuration</h3>
+      <label class="label">SMS Provider</label>
+      <select id="sms_provider" class="select">
+        <option value="Termii" ${smsSettings.provider === "Termii" ? "selected" : ""}>Termii</option>
+        <option value="BulkSMS Nigeria" ${smsSettings.provider === "BulkSMS Nigeria" ? "selected" : ""}>BulkSMS Nigeria</option>
+        <option value="SmartSMSSolutions" ${smsSettings.provider === "SmartSMSSolutions" ? "selected" : ""}>SmartSMSSolutions</option>
+        <option value="Custom" ${smsSettings.provider === "Custom" ? "selected" : ""}>Custom</option>
+      </select>
+      <div style="height:12px"></div>
+      <label class="label">Cost Per SMS Page (₦)</label>
+      <input id="sms_price" type="number" step="0.01" class="input" value="${smsSettings.pricePerSMS.toFixed(2)}" />
+      <div style="height:12px"></div>
+      <label class="label">Currency</label>
+      <select id="sms_currency" class="select">
+        <option value="NGN" ${smsSettings.currency === "NGN" ? "selected" : ""}>NGN</option>
+      </select>
+      <div style="height:12px"></div>
+      <label class="label">Sender ID</label>
+      <input id="sms_sender" type="text" maxlength="11" class="input" value="${escapeHtml(smsSettings.senderId)}" />
+      <div style="height:12px"></div>
+      <label class="label">Default SMS Length</label>
+      <div class="input" style="background:var(--surface-2);border-color:var(--border);color:var(--muted);">160 Characters</div>
+      <div style="height:16px"></div>
+      <button class="btn btn-primary" onclick="saveSMSSettings()">Save SMS Settings</button>
+    </div>
+  `;
+}
+
+function switchWardFromSettings(ward){
+  currentWard = ward;
+  document.getElementById("sideWard").textContent = `${currentWard} Ward`;
+  audit("Ward switched", {ward});
+  renderAll();
+  showPage("dashboard");
+}
+
+function toggleTheme(){
+  const current = document.documentElement.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem(THEME_KEY, next);
+}
+
+async function renderSecurity(){
+  const security = await ensureSecurity();
+  const logs = JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]");
+
+  document.getElementById("security").innerHTML = `
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 class="card-title">Ward Passwords</h3>
+        <p class="muted">Passwords are hashed with PBKDF2 in this browser. For stronger enterprise security, use Supabase Auth and Row Level Security.</p>
+        <div class="grid">
+          ${WARD_LIST.map(w=>`
+            <button class="btn btn-outline" onclick="changeWardPassword('${w}')">Change ${w} Password</button>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Session Policy</h3>
+        ${info("Session Timeout", `${security.sessionMinutes} minutes`)}
+        ${info("Failed Attempts", security.maxFailedAttempts)}
+        ${info("Lockout", `${security.lockoutMinutes} minutes`)}
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="card">
+      <h3 class="card-title">Activity Log</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Action</th><th>Ward</th><th>Role</th></tr></thead>
+          <tbody>
+            ${logs.slice(0,80).map(l=>`
+              <tr>
+                <td>${new Date(l.at).toLocaleString()}</td>
+                <td>${escapeHtml(l.action)}</td>
+                <td>${escapeHtml(l.ward)}</td>
+                <td>${escapeHtml(l.role)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+async function changeWardPassword(ward){
+  const body = `
+    <p>Set a new password for <strong>${escapeHtml(ward)} Ward</strong>.</p>
+    <label class="label">New Password</label>
+    <input id="newWardPassword" type="password" class="input" />
+    <div style="height:12px"></div>
+    <label class="label">Confirm Password</label>
+    <input id="confirmWardPassword" type="password" class="input" />
+  `;
+
+  const fn = "setPass_" + Date.now();
+  window[fn] = async () => {
+    const p1 = document.getElementById("newWardPassword").value;
+    const p2 = document.getElementById("confirmWardPassword").value;
+
+    if(p1.length < 6){
+      toast("Weak password", "Use at least 6 characters.", "danger");
+      return;
+    }
+
+    if(p1 !== p2){
+      toast("Password mismatch", "Both passwords must match.", "danger");
+      return;
+    }
+
+    const security = await ensureSecurity();
+    const salt = makeId("SALT");
+    security.wards[ward] = {
+      salt,
+      hash: await pbkdf2Hash(p1, salt),
+      updatedAt:new Date().toISOString()
+    };
+    saveSecurity(security);
+    audit("Ward password changed", {ward});
+    closeModal();
+    toast("Password updated", `${ward} password changed.`, "success");
+  };
+
+  openModal("Change Ward Password", body, `<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="${fn}()">Update Password</button>`);
+}
+
+function renderBackup(){
+  document.getElementById("backup").innerHTML = `
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 class="card-title">Manual Backup</h3>
+        <p class="muted">Download a complete JSON backup of all wards and records.</p>
+        <button class="btn btn-primary" onclick="exportData()">Export Backup</button>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Restore Backup</h3>
+        <p class="muted">Paste a valid PWMS backup JSON. This replaces local data.</p>
+        <button class="btn btn-outline" onclick="importData()">Import Backup</button>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Version History</h3>
+        <p class="muted">Future-ready cloud version history and restore points.</p>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Offline Mode</h3>
+        <p class="muted">This app saves locally first. Supabase sync runs when configured and available.</p>
+      </div>
+    </div>
+  `;
+}
+
+function exportData(){
+  const backup = {
+    app:"PWMS",
+    version:"1.5-single-file",
+    exportedAt:new Date().toISOString(),
+    data:db
+  };
+
+  const blob = new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `pwms_backup_${new Date().toISOString().slice(0,10)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  audit("Backup exported");
+}
+
+function importData(){
+  const body = `
+    <label class="label">Backup JSON</label>
+    <textarea id="backupJson" class="textarea" style="min-height:220px" placeholder="Paste backup JSON here"></textarea>
+  `;
+
+  const fn = "restore_" + Date.now();
+  window[fn] = () => {
+    try{
+      const parsed = JSON.parse(document.getElementById("backupJson").value);
+      const incoming = parsed.data || parsed;
+      if(!incoming || typeof incoming !== "object") throw new Error("Invalid backup");
+
+      db = incoming;
+      initDB();
+      save();
+      audit("Backup imported");
+      closeModal();
+      renderAll();
+      toast("Backup restored", "Data imported successfully.", "success");
+    }catch(e){
+      toast("Invalid backup", "Could not read the pasted JSON.", "danger");
+    }
+  };
+
+  openModal("Import Backup", body, `<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="${fn}()">Restore</button>`);
+}
+
+function renderAdministration(){
+  document.getElementById("administration").innerHTML = `
+    <div class="grid grid-3">
+      ${adminCard("Multi-LGA Ready","Architecture prepared for multiple LGAs, state and national administration.")}
+      ${adminCard("User Invitations","Future module for invited users and ward-level account provisioning.")}
+      ${adminCard("Biometric Attendance","Future extension for biometric and face-recognition attendance.")}
+      ${adminCard("Geo Check-in","Future extension for GPS validated meeting attendance.")}
+      ${adminCard("AI Analytics","Future predictive voter engagement and risk scoring.")}
+      ${adminCard("Multi-language","Future language packs for field teams.")}
+    </div>
+  `;
+}
+
+function adminCard(title,body){
+  return `<div class="card"><h3>${escapeHtml(title)}</h3><p class="muted">${escapeHtml(body)}</p></div>`;
+}
+
+function renderNotifications(){
+  const birthdays = allMembers().filter(m => m.dob && m.dob.slice(5) === new Date().toISOString().slice(5,10));
+  document.getElementById("notifications").innerHTML = `
+    <div class="grid grid-3">
+      <div class="card">
+        <h3 class="card-title">Meeting Reminders</h3>
+        ${emptyOrList(getWard().meetings.filter(m=>m.status !== "Closed").slice(0,5), m=>`
+          <div class="timeline-item"><strong>${escapeHtml(m.title)}</strong><div class="muted">${escapeHtml(m.date)}</div></div>
+        `)}
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Upcoming Birthdays</h3>
+        ${emptyOrList(birthdays, m=>`
+          <div class="timeline-item"><strong>${escapeHtml(m.name)}</strong><div class="muted">${escapeHtml(m.phone)}</div></div>
+        `)}
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">System Messages</h3>
+        <div class="timeline">
+          <div class="timeline-item"><strong>PWMS Ready</strong><div class="muted">Offline-first mode is active.</div></div>
+          <div class="timeline-item"><strong>Security</strong><div class="muted">Change default ward passwords before production use.</div></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================
+   QR, PHONE, SEARCH, HELPERS
+   ========================= */
+
+function showQRCode(id){
+  const member = findMemberById(id);
+  if(!member){
+    toast("Member not found", "Cannot generate QR.", "danger");
+    return;
+  }
+
+  const qrPayload = JSON.stringify({
+    app:"PWMS",
+    ward:currentWard,
+    unit:member.unitNum,
+    id:member.id || member.qrId,
+    membershipNumber:member.membershipNumber,
+    name:member.name,
+    phone:member.phone
+  });
+
+  const body = `
+    <div class="qr-card-preview" id="printCard">
+      <div class="id-front">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="logo" style="box-shadow:none">PW</div>
+          <div>
+            <strong>Political Ward Management System</strong>
+            <div style="font-size:.78rem;opacity:.85">Professional Political Administration Platform</div>
+          </div>
+        </div>
+      </div>
+      <div class="id-body">
+        <div class="avatar" style="margin:0 auto 10px;width:82px;height:82px;font-size:1.4rem">${escapeHtml((member.name || "M").split(" ").map(x=>x[0]).join("").slice(0,2))}</div>
+        <h3 style="margin:0">${escapeHtml(member.name)}</h3>
+        <div class="muted">${escapeHtml(currentWard)} Ward · Unit ${escapeHtml(member.unitNum)}</div>
+        <div class="muted">${escapeHtml(member.membershipNumber || member.id || "")}</div>
+        <div class="qr-box"><div id="memberQr"></div></div>
+      </div>
+      <div style="padding:14px;border-top:1px solid #e2e8f0;font-size:.78rem">
+        <strong>Emergency Contact:</strong> Ward Secretariat<br>
+        If found, return this card to the issuing ward office.
+      </div>
+    </div>
+  `;
+
+  openModal(
+    "Printable Member ID Card",
+    body,
+    `<button class="btn btn-outline" onclick="window.print()">Print / PDF</button>
+     <button class="btn btn-primary" onclick="closeModal()">Done</button>`
+  );
+
+  setTimeout(() => {
+    const qrBox = document.getElementById("memberQr");
+    if(qrBox && window.QRCode){
+      qrBox.innerHTML = "";
+      new QRCode(qrBox, {text:qrPayload, width:120, height:120});
+    }
+  }, 100);
+}
+
+function callPhone(phone){
+  if(!phone){
+    toast("No phone number", "This record has no phone number.", "warning");
+    return;
+  }
+  window.open("tel:" + phone, "_self");
+}
+
+function sendWhatsApp(phone,name,message){
+  if(!phone){
+    toast("No phone number", "Cannot open WhatsApp.", "warning");
+    return;
+  }
+
+  let normalized = normalizePhone(phone);
+  if(normalized.startsWith("0")) normalized = "234" + normalized.slice(1);
+  const text = message || `Hello ${name || ""}`;
+  window.open(`https://wa.me/${normalized}?text=${encodeURIComponent(text)}`, "_blank");
+}
+
+function filterCards(className,value){
+  value = String(value || "").toLowerCase().trim();
+  document.querySelectorAll("." + className).forEach(card => {
+    card.style.display = (card.dataset.search || "").includes(value) ? "" : "none";
+  });
+}
+
+function runGlobalSearch(value){
+  value = String(value || "").toLowerCase().trim();
+  if(!value) return;
+
+  const members = allMembers().filter(m =>
+    `${m.name} ${m.phone} ${m.street} ${m.unitNum} ${m.membershipNumber}`.toLowerCase().includes(value)
+  ).slice(0,8);
+
+  if(value.length >= 3){
+    openModal(
+      "Universal Search",
+      members.length
+        ? `<div class="grid">${members.map(m=>`
+            <button class="btn btn-outline" style="justify-content:flex-start" onclick="closeModal();openMemberProfile('${escapeHtml(m.id || m.qrId)}')">
+              ${escapeHtml(m.name || "Unnamed")} · ${escapeHtml(m.phone || "")} · Unit ${escapeHtml(m.unitNum)}
+            </button>
+          `).join("")}</div>`
+        : `<p class="muted">No matching member found.</p>`,
+      `<button class="btn btn-primary" onclick="closeModal()">Close</button>`
+    );
+    document.getElementById("globalSearch").value = "";
+  }
+}
+
+function toggleSidebar(){
+  document.getElementById("sidebar").classList.toggle("open");
+}
+
+/* =========================
+   LEGACY COMPATIBILITY NAMES
+   ========================= */
+
+function addNewMember(searchText){
+  showMemberForm();
+  setTimeout(() => {
+    const input = document.getElementById("m_name");
+    if(input && searchText) input.value = titleCase(searchText);
+  }, 100);
+}
+
+function markPresent(unitNum,index){
+  const member = (getWard().voters[unitNum] || [])[index];
+  if(!member){
+    toast("Member not found", "", "danger");
+    return;
+  }
+  autoMarkAttendance({...member, unitNum, index});
+}
+
+function selectAllVoters(){
+  allMembers().forEach(m => getWard().voters[m.unitNum][m.index].selected = true);
+  save();
+  toast("Members selected", "All members selected for communication.", "success");
+  renderMembers();
+}
+
+function unselectAllVoters(){
+  allMembers().forEach(m => getWard().voters[m.unitNum][m.index].selected = false);
+  save();
+  toast("Members unselected", "Selection cleared.", "success");
+  renderMembers();
+}
+
+/* =========================
+   INITIALIZE
+   ========================= */
+
+(async function init(){
+  const dbInit = loadDatabase();
+  const authInit = bootAuth();
+
+  try{
+    await Promise.race([
+      dbInit,
+      new Promise(resolve => setTimeout(resolve, 1200))
+    ]);
+  }catch(e){
+    console.warn("Database bootstrap timed out; continuing to auth flow.", e);
+  }
+
+  await authInit;
+})();
+</script>
+</body>
+</html>
