@@ -611,8 +611,12 @@ function promptModal(title, fields, onSave, saveText = "Save"){
 }
 
 function initDB(){
-  db = JSON.parse(localStorage.getItem(DATA_KEY) || "{}");
 
+  // Never reload from localStorage here.
+  // loadDatabase() is responsible for loading data.
+  if (!db || typeof db !== "object") {
+      db = {};
+  }
   const AIGBAKA_EXCOS = [
     { pos:"Chairman", name:"MR ADETUTU SAHEED", phone:"08089811373" },
     { pos:"Vice Chairman", name:"MR TAJUDEEN BAKARE", phone:"08020756768" },
@@ -790,28 +794,33 @@ async function save(sync = true){
 
 async function loadDatabase(){
 
-    initDB();
-
-    if(!USE_SUPABASE) return;
-
     try{
 
-        const result =
-    await API.loadWard(currentWard);
+        if(USE_SUPABASE){
 
-if(result.ok){
+            const result = await API.loadWard(currentWard);
 
-    db = result.data || {};
+            if(result.ok){
 
-    initDB();
+                db = result.data || {};
 
-}
+                console.log("Loaded from Supabase");
+
+            }
+
+        }
 
     }catch(err){
 
-        console.warn(err);
+        console.warn("Supabase unavailable, using local cache.");
+
+        db = JSON.parse(localStorage.getItem(DATA_KEY) || "{}");
 
     }
+
+    initDB();
+
+    localStorage.setItem(DATA_KEY, JSON.stringify(db));
 
 }
 function getWard(){
