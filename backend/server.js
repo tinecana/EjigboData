@@ -16,7 +16,7 @@ const wardRoutes = require("./routes/ward")(supabase);
 app.use(cors({
     origin: true,
     credentials: true
-}));
+})); 
 app.use(express.json());
 
 // =====================
