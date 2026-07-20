@@ -1,71 +1,31 @@
-const express = require("express");
+router.post("/:ward", async (req, res) => {
 
-module.exports = function (supabase) {
+    const ward = req.params.ward;
+    const payload = req.body;
 
-    const router = express.Router();
+    const { error } = await supabase
+        .from("ward_data")
+        .upsert(
+            {
+                ward,
+                data: payload,
+                updated_at: new Date().toISOString()
+            },
+            {
+                onConflict: "ward"
+            }
+        );
 
-    // ==========================
-    // LOAD WARD
-    // ==========================
-    router.get("/:ward", async (req, res) => {
-
-        const ward = req.params.ward;
-
-        const { data, error } = await supabase
-            .from("ward_data")
-            .select("data")
-            .eq("ward", ward)
-            .maybeSingle();
-
-        if (error) {
-            return res.status(500).json({
-                ok: false,
-                error: error.message
-            });
-        }
-
-        res.json({
-            ok: true,
-            data: data?.data || null
+    if (error) {
+        return res.status(500).json({
+            ok: false,
+            error: error.message
         });
+    }
 
+    res.json({
+        ok: true,
+        message: "Ward data saved successfully."
     });
 
-    // ==========================
-    // SAVE WARD
-    // ==========================
-    router.post("/:ward", async (req, res) => {
-
-        const ward = req.params.ward;
-
-        const payload = req.body;
-
-        const { error } = await supabase
-            .from("ward_data")
-            .upsert(
-                {
-                    ward,
-                    data: payload,
-                    updated_at: new Date().toISOString()
-                },
-                {
-                    onConflict: "ward"
-                }
-            );
-
-        if (error) {
-            return res.status(500).json({
-                ok: false,
-                error: error.message
-            });
-        }
-
-        res.json({
-            ok: true
-        });
-
-    });
-
-    return router;
-
-};
+});
