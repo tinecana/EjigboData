@@ -333,6 +333,9 @@ tr:hover td{background:var(--surface-2)}
    PWMS SINGLE FILE ENTERPRISE COMPATIBILITY BUILD
    Preserves existing localStorage data key: ejigbo_ward_data
    ========================================================= */
+console.log("========== PWMS BUILD ==========");
+console.log("Build Time:", "2026-07-20 21:00");
+console.log("INDEX FILE CHECK");
 
 const BACKEND_URL = (
   window.__PWMS_SMS_BACKEND_URL ||
@@ -705,7 +708,12 @@ function initDB(){
 ];
 
   WARD_LIST.forEach(w => {
-    if(!db[w]){
+    const needsInit =
+    !db[w] ||
+    !db[w].units ||
+    db[w].units.length === 0;
+
+if (needsInit) {
       db[w] = {
         units:[{name:"General Unit", num:"GEN", code:"GENERAL", leader:"", phone:"", streets:[]}],
         excos:[],
@@ -727,9 +735,9 @@ function initDB(){
             name:unit.code,
             num:unit.num,
             code:unit.code,
-            leader:"",
-            phone:"",
-            streets:[]
+           leader: "",
+	   phone: "",
+           streets: []
           });
           if(!db[w].voters[unit.num]) db[w].voters[unit.num] = [];
         });
@@ -737,6 +745,7 @@ function initDB(){
       }else{
         db[w].excos = EXCO_POSITIONS.map(pos => ({pos, name:"", phone:""}));
       }
+
     }
 
     db[w].units = db[w].units || [];
@@ -760,6 +769,39 @@ function initDB(){
   save(false);
 }
 
+async function initializeDatabase() {
+
+    if (!confirm("This will upload all wards to the database.\n\nContinue?")) {
+        return;
+    }
+
+    initDB();
+
+    let success = 0;
+
+    for (const ward of WARD_LIST) {
+
+        console.log("Uploading:", ward);
+
+        try {
+
+            await API.saveWard(ward, db[ward]);
+
+            console.log("✅", ward);
+
+            success++;
+
+        } catch (err) {
+
+            console.error("❌ Failed:", ward, err);
+
+        }
+
+    }
+
+    alert(`Finished!\n\n${success} of ${WARD_LIST.length} wards uploaded.`);
+}
+
 async function save(sync = true){
 
     localStorage.setItem(
@@ -771,9 +813,9 @@ async function save(sync = true){
 
     try{
 
-       await API.saveWard(
+      await API.saveWard(
     currentWard,
-    db
+    db[currentWard]
 );
     }catch(e){
 
@@ -792,39 +834,46 @@ async function save(sync = true){
 
 }
 
-async function loadDatabase(){
+async function loadDatabase() {
 
-    try{
+    // Initialize all wards
+    db = {};
 
-        if(USE_SUPABASE){
+    WARD_LIST.forEach(w => {
+        db[w] = {};
+    });
+
+    try {
+
+        if (USE_SUPABASE) {
 
             const result = await API.loadWard(currentWard);
 
-            if(result.ok){
-
-                db = result.data || {};
-
-                console.log("Loaded from Supabase");
-
+            if (result.ok) {
+                db[currentWard] = result.data || {};
             }
 
         }
 
-    }catch(err){
+    } catch (err) {
 
         console.warn("Supabase unavailable, using local cache.");
 
-        db = JSON.parse(localStorage.getItem(DATA_KEY) || "{}");
+        const local = JSON.parse(localStorage.getItem(DATA_KEY) || "{}");
+
+        Object.assign(db, local);
 
     }
 
+    // Ensure every ward has the required structure
     initDB();
 
+    // Save locally for offline use
     localStorage.setItem(DATA_KEY, JSON.stringify(db));
 
 }
-function getWard(){
-  return db[currentWard];
+function getWard() {
+    return db[currentWard] || {};
 }
 
 function allMembers(){
@@ -1084,14 +1133,18 @@ async function authenticate(){
   unlockApp();
 }
 
-function unlockApp(){
-  document.getElementById("authScreen").classList.add("hidden");
-  document.getElementById("appShell").classList.remove("hidden");
-  document.getElementById("sideUser").textContent = currentRole;
-  document.getElementById("sideWard").textContent = `${currentWard} Ward`;
-  setupNav();
-  showPage("dashboard");
-  resetSessionTimer();
+async function unlockApp(){
+
+  
+    document.getElementById("authScreen").classList.add("hidden");
+    document.getElementById("appShell").classList.remove("hidden");
+
+    document.getElementById("sideUser").textContent = currentRole;
+    document.getElementById("sideWard").textContent = `${currentWard} Ward`;
+
+    setupNav();
+    showPage("dashboard");
+    resetSessionTimer();
 }
 
 function logout(){
