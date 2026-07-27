@@ -765,6 +765,15 @@ if (needsInit) {
     db[w].units.forEach(u => {
       if(!db[w].voters[u.num]) db[w].voters[u.num] = [];
     });
+
+    Object.keys(db[w].voters).forEach(unitNum => {
+      (db[w].voters[unitNum] || []).forEach(member => {
+        if(typeof member.nin === "undefined") member.nin = "";
+        if(typeof member.vin === "undefined") member.vin = "";
+        if(typeof member.email === "undefined") member.email = "";
+        if(typeof member.apcCaucus === "undefined") member.apcCaucus = "Not Specified";
+      });
+    });
   });
 
   save(false);
@@ -877,8 +886,8 @@ function getWard() {
     return db[currentWard] || {};
 }
 
-function allMembers(){
-  const ward = getWard();
+function allMembers(wardName){
+  const ward = (wardName && wardName !== currentWard) ? (db[wardName] || {}) : getWard();
   const result = [];
   Object.keys(ward.voters || {}).forEach(unitNum => {
     (ward.voters[unitNum] || []).forEach((member, index) => {
@@ -1316,6 +1325,7 @@ function renderMembers(){
       <input class="input" id="memberSearch" placeholder="Search name, phone, street, polling unit..." oninput="filterMemberTable(this.value)" />
       <button class="btn btn-primary" onclick="showMemberForm()">Add Member</button>
       <button class="btn btn-outline" onclick="exportMembersCSV()">Export CSV</button>
+      <button class="btn btn-outline" onclick="exportMembersPDFDialog()">Export PDF</button>
     </div>
 
     <div class="table-wrap">
@@ -1342,7 +1352,7 @@ function renderMembers(){
 function memberRow(m){
   const initials = (m.name || "Member").split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase();
   return `
-    <tr data-search="${escapeHtml(`${m.name} ${m.phone} ${m.street} ${m.unitNum}`.toLowerCase())}">
+    <tr data-search="${escapeHtml(`${m.name} ${m.phone} ${m.street} ${m.unitNum} ${m.nin || ""} ${m.vin || ""} ${m.email || ""} ${m.apcCaucus || ""}`.toLowerCase())}">
       <td>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="kpi-icon">${escapeHtml(initials || "M")}</div>
@@ -1407,6 +1417,11 @@ function showMemberForm(id = null){
           </select></div>
           <div><label class="label">Street</label><input id="m_street" class="input" value="${escapeHtml(member.street || "")}" /></div>
           <div><label class="label">Polling Unit</label><select id="m_unit" class="select">${unitOptions}</select></div>
+          <div><label class="label">NIN</label><input id="m_nin" class="input" maxlength="11" inputmode="numeric" placeholder="11-digit NIN" value="${escapeHtml(member.nin || "")}" /></div>
+          <div><label class="label">VIN</label><input id="m_vin" class="input" maxlength="30" placeholder="Voter ID Number" value="${escapeHtml(member.vin || "")}" /></div>
+          <div><label class="label">APC Caucus</label><select id="m_apcCaucus" class="select">
+            ${["Not Specified","Mandate","Justice Forum"].map(v=>`<option ${(member.apcCaucus || "Not Specified")===v?"selected":""}>${v}</option>`).join("")}
+          </select></div>
         </div>
       </div>
     </div>
@@ -1432,6 +1447,15 @@ function showMemberForm(id = null){
       return;
     }
 
+    const nin = document.getElementById("m_nin").value.replace(/\D/g,"").slice(0,11);
+    const vin = document.getElementById("m_vin").value.replace(/[^a-zA-Z0-9]/g,"").slice(0,30);
+    const emailValue = document.getElementById("m_email").value.trim();
+
+    if(emailValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)){
+      toast("Validation error", "Please enter a valid email address.", "danger");
+      return;
+    }
+
     const newData = {
       id: member.id || makeId("MBR"),
       qrId: member.qrId || member.id || makeId("QR"),
@@ -1441,11 +1465,14 @@ function showMemberForm(id = null){
       dob: document.getElementById("m_dob").value,
       phone,
       altPhone: document.getElementById("m_altPhone").value.trim(),
-      email: document.getElementById("m_email").value.trim(),
+      email: emailValue,
       occupation: document.getElementById("m_occupation").value.trim(),
       supportLevel: document.getElementById("m_supportLevel").value,
       street: titleCase(document.getElementById("m_street").value),
       ward: currentWard,
+      nin,
+      vin,
+      apcCaucus: document.getElementById("m_apcCaucus").value,
       address: document.getElementById("m_address").value.trim(),
       notes: document.getElementById("m_notes").value.trim(),
       status: member.status || "Active",
@@ -1641,6 +1668,10 @@ function openMemberProfile(id){
             ${info("Registration Date",m.registrationDate ? new Date(m.registrationDate).toLocaleDateString() : "")}
             ${info("Created By",m.createdBy)}
             ${info("Updated By",m.updatedBy)}
+            <div><div class="kpi-label">Email</div><strong>${escapeHtml(m.email || "Not Provided")}</strong></div>
+            <div><div class="kpi-label">NIN</div><strong>${escapeHtml(m.nin || "Not Provided")}</strong></div>
+            <div><div class="kpi-label">VIN</div><strong>${escapeHtml(m.vin || "Not Provided")}</strong></div>
+            <div><div class="kpi-label">APC Caucus</div><strong>${escapeHtml(m.apcCaucus || "Not Provided")}</strong></div>
           </div>
         </div>
 
@@ -2795,13 +2826,183 @@ function reportCard(title,desc,action,label){
 }
 
 function exportMembersCSV(){
-  const rows = [["Name","Phone","Street","Ward","Polling Unit","Membership Number","Support Level","Status"]];
+  const rows = [["Name","Phone","Street","Ward","Polling Unit","Membership Number","Support Level","Status","NIN","VIN"]];
   allMembers().forEach(m => rows.push([
     m.name || "", m.phone || "", m.street || "", currentWard, m.unitNum || "",
-    m.membershipNumber || m.id || "", m.supportLevel || "", m.status || ""
+    m.membershipNumber || m.id || "", m.supportLevel || "", m.status || "", m.nin || "", m.vin || ""
   ]));
   downloadCSV(`${currentWard}_members.csv`, rows);
   audit("Members CSV exported");
+}
+
+/* =========================
+   MEMBER PDF EXPORT (new feature — does not replace CSV export)
+   ========================= */
+
+const PDF_MEMBER_COLUMNS = [
+  {key:"name", label:"Name"},
+  {key:"phone", label:"Phone"},
+  {key:"email", label:"Email"},
+  {key:"address", label:"Address"},
+  {key:"street", label:"Street"},
+  {key:"unitNum", label:"Polling Unit"},
+  {key:"gender", label:"Gender"},
+  {key:"nin", label:"NIN"},
+  {key:"vin", label:"VIN"},
+  {key:"apcCaucus", label:"APC Caucus"}
+];
+
+function exportMembersPDFDialog(){
+  if(!enforce("members")) return;
+  const units = getWard().units || [];
+  const streets = getWard().wardStreets || [];
+
+  const columnChecks = PDF_MEMBER_COLUMNS.map(c => `
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <input type="checkbox" class="pdf_col_check" value="${c.key}" checked />
+      ${escapeHtml(c.label)}
+    </label>
+  `).join("");
+
+  const unitOptions = units.map(u => `<option value="${escapeHtml(u.num)}">Unit ${escapeHtml(u.num)} - ${escapeHtml(u.name || u.code || "")}</option>`).join("");
+  const streetOptions = streets.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("");
+  const wardOptions = WARD_LIST.map(w => `<option value="${escapeHtml(w)}" ${w===currentWard?"selected":""}>${escapeHtml(w)} Ward</option>`).join("");
+
+  const body = `
+    <div class="form-row">
+      <div>
+        <label class="label">Columns to Include</label>
+        <div style="max-height:220px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:10px">
+          ${columnChecks}
+        </div>
+      </div>
+      <div>
+        <label class="label">Filter By</label>
+        <select id="pdf_filter_type" class="select" onchange="togglePDFFilterControls()">
+          <option value="all">Export All Members</option>
+          <option value="unit">Polling Unit</option>
+          <option value="street">Street</option>
+          <option value="ward">Ward</option>
+          <option value="caucus">APC Caucus</option>
+        </select>
+        <div style="height:10px"></div>
+        <div id="pdf_filter_unit_wrap" class="hidden">
+          <label class="label">Select Polling Unit</label>
+          <select id="pdf_filter_unit" class="select">${unitOptions}</select>
+        </div>
+        <div id="pdf_filter_street_wrap" class="hidden">
+          <label class="label">Select Street</label>
+          <select id="pdf_filter_street" class="select">${streetOptions}</select>
+        </div>
+        <div id="pdf_filter_ward_wrap" class="hidden">
+          <label class="label">Select Ward</label>
+          <select id="pdf_filter_ward" class="select">${wardOptions}</select>
+        </div>
+        <div id="pdf_filter_caucus_wrap" class="hidden">
+          <label class="label">Select APC Caucus</label>
+          <select id="pdf_filter_caucus" class="select">
+            <option value="All">All</option>
+            <option value="Mandate">Mandate</option>
+            <option value="Justice Forum">Justice Forum</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  `;
+
+  openModal(
+    "Export Members to PDF",
+    body,
+    `<button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" onclick="generateMembersPDF()">Generate PDF</button>`
+  );
+}
+
+function togglePDFFilterControls(){
+  const type = document.getElementById("pdf_filter_type").value;
+  ["unit","street","ward","caucus"].forEach(t => {
+    const el = document.getElementById(`pdf_filter_${t}_wrap`);
+    if(el) el.classList.toggle("hidden", t !== type);
+  });
+}
+
+function generateMembersPDF(){
+  const checkedCols = Array.from(document.querySelectorAll(".pdf_col_check"))
+    .filter(cb => cb.checked)
+    .map(cb => cb.value);
+
+  if(checkedCols.length === 0){
+    toast("No columns selected", "Please select at least one column to export.", "danger");
+    return;
+  }
+
+  const columns = PDF_MEMBER_COLUMNS.filter(c => checkedCols.includes(c.key));
+  const filterType = document.getElementById("pdf_filter_type").value;
+  let members = [];
+  let scopeLabel = `${currentWard} Ward`;
+
+  if(filterType === "unit"){
+    const unitVal = document.getElementById("pdf_filter_unit").value;
+    members = allMembers().filter(m => m.unitNum === unitVal);
+    scopeLabel = `${currentWard} Ward — Polling Unit ${unitVal}`;
+  }else if(filterType === "street"){
+    const streetVal = document.getElementById("pdf_filter_street").value;
+    members = allMembers().filter(m => (m.street || "").toLowerCase() === streetVal.toLowerCase());
+    scopeLabel = `${currentWard} Ward — ${streetVal} Street`;
+  }else if(filterType === "ward"){
+    const wardVal = document.getElementById("pdf_filter_ward").value;
+    members = allMembers(wardVal);
+    scopeLabel = `${wardVal} Ward`;
+  }else if(filterType === "caucus"){
+    const caucusVal = document.getElementById("pdf_filter_caucus").value;
+    members = caucusVal === "All"
+      ? allMembers()
+      : allMembers().filter(m => (m.apcCaucus || "Not Specified") === caucusVal);
+    scopeLabel = `${currentWard} Ward — ${caucusVal} Caucus`;
+  }else{
+    members = allMembers();
+  }
+
+  closeModal();
+  buildMembersPDFDocument(members, columns, scopeLabel);
+  audit("Members PDF exported", {count: members.length, columns: checkedCols});
+}
+
+function buildMembersPDFDocument(members, columns, scopeLabel){
+  const landscape = columns.length > 5;
+  const headerRow = columns.map(c => `<th>${escapeHtml(c.label)}</th>`).join("");
+  const bodyRows = members.map(m => `<tr>${columns.map(c => `<td>${escapeHtml(m[c.key] || "-")}</td>`).join("")}</tr>`).join("");
+
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <html><head><title>PWMS Member Register</title>
+    <style>
+      @page { size: ${landscape ? "landscape" : "portrait"}; margin: 15mm; }
+      body{font-family:Arial;padding:24px;color:#111827}
+      h1{color:#0B3D91;margin-bottom:2px}
+      h2{margin-top:0;color:#374151}
+      .meta{color:#6b7280;margin-bottom:18px}
+      table{width:100%;border-collapse:collapse;table-layout:auto}
+      thead{display:table-header-group}
+      td,th{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:12px;word-break:break-word}
+      th{background:#0B3D91;color:white}
+      tr{page-break-inside:avoid}
+    </style></head><body>
+      <h1>Political Ward Management System</h1>
+      <h2>Member Register</h2>
+      <div class="meta">
+        ${escapeHtml(scopeLabel)}<br/>
+        Generated: ${new Date().toLocaleString()}<br/>
+        Total Members: ${members.length}
+      </div>
+      <table>
+        <thead><tr>${headerRow}</tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </body></html>
+  `);
+  win.document.close();
+  setTimeout(() => win.print(), 250);
 }
 
 function exportAttendanceCSV(){
