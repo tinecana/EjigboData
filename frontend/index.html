@@ -400,6 +400,7 @@ const EXCO_POSITIONS = [
 let currentWard = "Aigbaka";
 let currentRole = "Administrator";
 let currentUser = "Administrator";
+let dbReadyPromise = null;
 let db = {};
 let html5QrCode = null;
 let sessionTimer = null;
@@ -1135,7 +1136,10 @@ async function authenticate(){
 
 async function unlockApp(){
 
-  
+    if(dbReadyPromise){
+      try{ await dbReadyPromise; }catch(e){ console.warn("Database bootstrap did not complete cleanly", e); }
+    }
+
     document.getElementById("authScreen").classList.add("hidden");
     document.getElementById("appShell").classList.remove("hidden");
 
@@ -3349,7 +3353,8 @@ function unselectAllVoters(){
    ========================= */
 
 (async function init(){
-  const dbInit = loadDatabase();
+  dbReadyPromise = loadDatabase();
+  const dbInit = dbReadyPromise;
   const authInit = bootAuth();
 
   try{
