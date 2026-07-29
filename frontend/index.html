@@ -269,6 +269,9 @@ tr:hover td{background:var(--surface-2)}
         </div>
       </div>
       <div class="top-actions">
+        <span id="connectionStatus" style="font-size:0.85rem;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--surface-2,#f3f4f6)">🟢 Online</span>
+        <span id="syncStatusBadge" style="font-size:0.85rem;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--surface-2,#f3f4f6)">✅ Synced</span>
+        <button class="btn btn-outline btn-sm" onclick="syncQueue()" title="Sync pending changes now">🔄 Sync Now</button>
         <input id="globalSearch" class="input" style="width:240px" placeholder="Search members, streets, units..." oninput="runGlobalSearch(this.value)" />
         <button class="btn btn-outline" onclick="toggleTheme()">Theme</button>
         <button class="btn btn-gold" onclick="showPage('notifications')">Alerts</button>
@@ -361,6 +364,34 @@ const AUDIT_KEY = 'pwms_audit_log';
 const THEME_KEY = 'pwms_theme';
 
 const WARD_LIST = ["Aigbaka","Ailegun","Fadu","Ifoshi","Ilamose","Oke-Afa"];
+
+// Offline-first: tracks live connectivity state, updated by the browser's own online/offline events.
+let isOnline = navigator.onLine;
+
+function updateConnectionIndicator(){
+  const el = document.getElementById("connectionStatus");
+  if(!el) return;
+  el.textContent = isOnline ? "🟢 Online" : "🔴 Offline";
+  el.title = isOnline ? "Connected — changes sync to Supabase" : "Offline — changes are saved on this device";
+}
+
+window.addEventListener("online", () => {
+  isOnline = true;
+  updateConnectionIndicator();
+  console.log("[ONLINE] Connection restored");
+  // Connection restored: refresh remote first, then flush the sync queue — never blocks the UI.
+  if(typeof refreshFromRemote === "function"){
+    refreshFromRemote().then(() => {
+      if(typeof syncQueue === "function") syncQueue();
+    });
+  }
+});
+
+window.addEventListener("offline", () => {
+  isOnline = false;
+  updateConnectionIndicator();
+  console.log("[OFFLINE] Connection lost — continuing in offline mode");
+});
 
 const MODULES = [
   {id:"dashboard", label:"Dashboard", icon:"📊", subtitle:"Executive overview and ward intelligence"},
@@ -814,74 +845,354 @@ async function initializeDatabase() {
 
 async function save(sync = true){
 
-    localStorage.setItem(
-        DATA_KEY,
-        JSON.stringify(db)
-    );
+    try{
+        localStorage.setItem(
+            DATA_KEY,
+            JSON.stringify(db)
+        );
+    }catch(e){
+        console.warn("[OFFLINE] Local save failed", e);
+        toast("Save warning", "Could not save to this device's storage.", "danger");
+    }
 
     if(!sync || !USE_SUPABASE) return;
 
-    try{
+    // Queue the change instead of pushing it directly. PWMS stores one JSON document per
+    // ward via API.saveWard(ward, wardData) — there is no per-member/per-record endpoint —
+    // so every change to this ward (a member, an attendance mark, a street, a unit, an
+    // exco...) collapses into a single durable "sync this ward" operation. Queuing it here,
+    // in the one function every save already goes through, means every offline edit
+    // anywhere in the app is covered without touching those individual features.
+    enqueue("upsert", "ward", currentWard);
 
-      await API.saveWard(
-    currentWard,
-    db[currentWard]
-);
-    }catch(e){
-
-        console.warn(
-            "Backend sync failed",
-            e
-        );
-
-        toast(
-            "Offline mode",
-            "Changes saved on this device.",
-            "warning"
-        );
-
-    }
+    if(isOnline) syncQueue(); // fire-and-forget — never blocks the UI or the caller.
 
 }
 
 async function loadDatabase() {
 
-    // Initialize all wards
+    // 1. Load Local Database immediately — the app never waits on the network to open.
     db = {};
-
     WARD_LIST.forEach(w => {
         db[w] = {};
     });
 
     try {
-
-        if (USE_SUPABASE) {
-
-            const result = await API.loadWard(currentWard);
-
-            if (result.ok) {
-                db[currentWard] = result.data || {};
-            }
-
-        }
-
-    } catch (err) {
-
-        console.warn("Supabase unavailable, using local cache.");
-
         const local = JSON.parse(localStorage.getItem(DATA_KEY) || "{}");
-
         Object.assign(db, local);
-
+    } catch (err) {
+        // Corrupt local data must never crash the app — fall back to a clean structure and repair below.
+        console.warn("[OFFLINE] Local database was unreadable, starting from a clean structure.", err);
     }
 
-    // Ensure every ward has the required structure
+    // 2. Ensure every ward has the required structure (units, voters, attendance, streets, settings, etc.)
     initDB();
 
-    // Save locally for offline use
+    // 3. Persist the now-guaranteed-valid structure back locally.
     localStorage.setItem(DATA_KEY, JSON.stringify(db));
 
+    // 4. If online, refresh from Supabase and flush any queued changes in the background.
+    if (isOnline && USE_SUPABASE) {
+        refreshFromRemote().then(() => syncQueue());
+    }
+
 }
+
+async function refreshFromRemote(){
+    if(!USE_SUPABASE) return;
+    try{
+        // Never clobber unsynced local work: if this ward has changes waiting to sync,
+        // skip the remote overwrite. The sync engine will push local changes instead,
+        // and syncOperation()'s own conflict check guards against pushing over newer
+        // cloud data. This is how "preserve local pending edits" is honored here.
+        if(getPending().some(op => op.entity === "ward" && op.entityId === currentWard)){
+            console.log("[SYNC] Skipping remote refresh — local changes pending for", currentWard);
+            return;
+        }
+
+        const result = await API.loadWard(currentWard);
+        if(result && result.ok && result.data){
+            // Only the currently loaded ward is refreshed, matching existing single-ward load behavior.
+            db[currentWard] = result.data;
+            initDB();
+            localStorage.setItem(DATA_KEY, JSON.stringify(db));
+            refreshCurrentUI();
+        }
+    }catch(err){
+        // Never surface this as an error — the app already has local data to work with.
+        console.warn("[OFFLINE] Background refresh from Supabase unavailable, continuing offline.", err);
+    }
+}
+
+function refreshCurrentUI(){
+    // Re-render only the currently visible page, not the whole application.
+    const active = document.querySelector(".page.active");
+    if(active && active.id) renderPage(active.id);
+}
+
+/* =========================
+   SYNC ENGINE
+   ========================= */
+/*
+ * Lifecycle:
+ *   1. Every save() enqueues an "upsert ward" operation (see save() above) and persists
+ *      it to localStorage immediately — the queue survives refresh, restart, and crashes.
+ *   2. syncQueue() drains the queue sequentially (never concurrently — guarded by
+ *      syncInProgress) whenever: the app starts, connectivity returns, every 60s while
+ *      online, or the user clicks "Sync Now".
+ *   3. Each operation is pushed via syncOperation(), which stamps the ward document with
+ *      updatedAt/updatedBy/version and re-checks the remote copy first so a newer cloud
+ *      version is never silently overwritten (conflict detection).
+ *   4. Failures increase that operation's retry count and reschedule it with exponential
+ *      backoff (1/2/4/8/16 min); after 5 failed attempts it's marked "failed" (permanent)
+ *      and stops being retried automatically, but is never deleted or hidden.
+ *   5. sync-start / sync-success / sync-error / sync-complete events are dispatched on
+ *      window so any part of the UI can react without polling.
+ */
+
+const SYNC_QUEUE_KEY = "pwms_sync_queue";
+let syncQueueCache = [];
+let syncInProgress = false;
+let lastSync = null;
+let lastError = null;
+
+function generateSyncId(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function loadQueue(){
+  try{
+    syncQueueCache = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]");
+  }catch(e){
+    console.warn("[QUEUE] Sync queue was corrupt, resetting.", e);
+    syncQueueCache = [];
+  }
+  return syncQueueCache;
+}
+
+function saveQueue(){
+  try{
+    localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(syncQueueCache));
+  }catch(e){
+    console.warn("[QUEUE] Failed to persist sync queue.", e);
+  }
+  updateSyncIndicator();
+}
+
+function enqueue(operation, entity, entityId, payload = null){
+  loadQueue();
+
+  // Duplicate protection: an entity with an existing pending operation just gets its
+  // payload/timestamp refreshed instead of growing the queue with redundant entries.
+  const existing = syncQueueCache.find(op =>
+    op.status === "pending" &&
+    op.operation === operation &&
+    op.entity === entity &&
+    op.entityId === entityId
+  );
+  if(existing){
+    existing.payload = payload;
+    existing.timestamp = Date.now();
+    saveQueue();
+    console.log("[QUEUE] Collapsed into existing pending operation", existing.id);
+    return existing;
+  }
+
+  const op = {
+    id: generateSyncId(),
+    operation,
+    ward: currentWard,
+    entity,
+    entityId,
+    payload,
+    timestamp: Date.now(),
+    retries: 0,
+    status: "pending",
+    nextAttempt: Date.now()
+  };
+  syncQueueCache.push(op);
+  saveQueue();
+  console.log("[QUEUE] Enqueued", op.id, operation, entity, entityId);
+  return op;
+}
+
+function dequeue(){
+  loadQueue();
+  const op = syncQueueCache.find(o => o.status === "pending");
+  if(op) remove(op.id);
+  return op || null;
+}
+
+function peek(){
+  loadQueue();
+  return syncQueueCache.find(o => o.status === "pending") || null;
+}
+
+function remove(id){
+  loadQueue();
+  syncQueueCache = syncQueueCache.filter(o => o.id !== id);
+  saveQueue();
+}
+
+function clear(){
+  syncQueueCache = [];
+  saveQueue();
+  console.log("[QUEUE] Cleared");
+}
+
+function getPending(){
+  loadQueue();
+  return syncQueueCache.filter(o => o.status === "pending");
+}
+
+function queueLength(){
+  return getPending().length;
+}
+
+function syncStatus(){
+  return {
+    syncStatus: syncInProgress ? "syncing" : (queueLength() > 0 ? "pending" : "idle"),
+    syncQueueLength: queueLength(),
+    lastSync,
+    lastError,
+    syncInProgress
+  };
+}
+
+function updateSyncIndicator(){
+  const el = document.getElementById("syncStatusBadge");
+  if(!el) return;
+  const s = syncStatus();
+  if(s.syncInProgress) el.textContent = "🔄 Syncing…";
+  else if(s.syncQueueLength > 0) el.textContent = `⏳ ${s.syncQueueLength} pending`;
+  else el.textContent = "✅ Synced";
+}
+
+function dispatchSyncEvent(name, detail = {}){
+  window.dispatchEvent(new CustomEvent(name, {detail}));
+}
+
+async function syncOperation(op){
+  const wardData = db[op.ward];
+  if(!wardData){
+    throw new Error(`[SYNC] No local data found for ward ${op.ward}`);
+  }
+
+  // Conflict detection: compare against the remote copy before overwriting it.
+  // Newest wins — a cloud copy newer than what we last synced is never overwritten.
+  try{
+    const remote = await API.loadWard(op.ward);
+    if(remote && remote.ok && remote.data && remote.data.updatedAt){
+      const remoteTime = remote.data.updatedAt;
+      const lastKnownRemoteTime = wardData.__lastSyncedRemoteUpdatedAt || 0;
+      if(remoteTime > lastKnownRemoteTime && remoteTime > (wardData.updatedAt || 0)){
+        console.warn("[SYNC] Conflict detected for", op.ward, "— cloud copy is newer, not overwriting.");
+        dispatchSyncEvent("sync-error", {op, reason: "conflict"});
+        throw new Error("conflict: remote data is newer than local");
+      }
+    }
+  }catch(e){
+    if(String(e.message || e).startsWith("conflict")) throw e;
+    // The conflict check itself failed (e.g. a network hiccup) — fall through and
+    // still attempt the push rather than blocking sync indefinitely on a read error.
+  }
+
+  wardData.updatedAt = Date.now();
+  wardData.updatedBy = currentUser;
+  wardData.version = (wardData.version || 0) + 1;
+
+  await API.saveWard(op.ward, wardData);
+
+  wardData.__lastSyncedRemoteUpdatedAt = wardData.updatedAt;
+  localStorage.setItem(DATA_KEY, JSON.stringify(db));
+}
+
+async function processNextOperation(){
+  const op = getPending()
+    .filter(o => (o.nextAttempt || 0) <= Date.now())
+    .sort((a, b) => a.timestamp - b.timestamp)[0];
+
+  if(!op) return false;
+
+  try{
+    console.log("[SYNC] Processing", op.id, op.operation, op.entity, op.entityId);
+    await syncOperation(op);
+    remove(op.id);
+    console.log("[SYNC] Success", op.id);
+  }catch(err){
+    op.retries = (op.retries || 0) + 1;
+    lastError = err.message || String(err);
+    console.warn("[SYNC] Failed", op.id, "attempt", op.retries, lastError);
+
+    if(op.retries >= 5){
+      op.status = "failed";
+      console.warn("[QUEUE] Permanent failure for", op.id, "after 5 retries");
+    }else{
+      const backoffMinutes = Math.pow(2, op.retries - 1); // 1, 2, 4, 8, 16
+      op.nextAttempt = Date.now() + backoffMinutes * 60 * 1000;
+      console.log("[SYNC] Will retry", op.id, "in", backoffMinutes, "min");
+    }
+    saveQueue();
+  }
+  return true; // an operation was attempted this round, keep draining the queue
+}
+
+async function syncQueue(){
+  if(syncInProgress){
+    console.log("[SYNC] Sync already in progress, skipping duplicate run.");
+    return;
+  }
+  if(!isOnline){
+    console.log("[OFFLINE] Sync skipped — no connection.");
+    return;
+  }
+  if(!USE_SUPABASE) return;
+
+  if(getPending().length === 0) return;
+
+  syncInProgress = true;
+  updateSyncIndicator();
+  dispatchSyncEvent("sync-start", {queueLength: getPending().length});
+  console.log("[SYNC] Starting sync run —", getPending().length, "pending operation(s)");
+
+  try{
+    let processed = true;
+    let guard = 0; // safety cap so a stuck queue can never spin forever
+    while(processed && guard < 200){
+      processed = await processNextOperation();
+      guard++;
+    }
+    lastSync = Date.now();
+    dispatchSyncEvent("sync-success", {lastSync});
+    console.log("[SYNC] Sync run complete");
+  }catch(err){
+    lastError = err.message || String(err);
+    console.warn("[SYNC] Sync run error", err);
+    dispatchSyncEvent("sync-error", {error: lastError});
+  }finally{
+    syncInProgress = false;
+    updateSyncIndicator();
+    dispatchSyncEvent("sync-complete", syncStatus());
+  }
+}
+
+async function syncAll(){
+  // Kept as a named alias for parity with the sync-engine spec — identical to syncQueue().
+  return syncQueue();
+}
+
+// Testing / debugging hooks, exposed on window as requested.
+window.syncQueue = syncQueue;
+window.enqueue = enqueue;
+window.syncStatus = syncStatus;
+window.forceSync = syncQueue;
+window.clearQueue = clear;
+window.pendingQueue = getPending;
 function getWard() {
     return db[currentWard] || {};
 }
@@ -3554,6 +3865,14 @@ function unselectAllVoters(){
    ========================= */
 
 (async function init(){
+  updateConnectionIndicator();
+
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("sw.js").catch(err => {
+      console.warn("Service worker registration failed; app still works without it.", err);
+    });
+  }
+
   dbReadyPromise = loadDatabase();
   const dbInit = dbReadyPromise;
   const authInit = bootAuth();
@@ -3568,6 +3887,18 @@ function unselectAllVoters(){
   }
 
   await authInit;
+
+  updateSyncIndicator();
+
+  // Automatic queue processing: on app start (once auth/data are ready)...
+  if(isOnline) syncQueue();
+
+  // ...every 60 seconds while online...
+  setInterval(() => { if(isOnline) syncQueue(); }, 60 * 1000);
+
+  // ...and a background remote refresh every 5 minutes while online (goal: keep local
+  // data fresh without ever overwriting unsynced local edits — see refreshFromRemote()).
+  setInterval(() => { if(isOnline) refreshFromRemote(); }, 5 * 60 * 1000);
 })();
 </script>
 </body>
