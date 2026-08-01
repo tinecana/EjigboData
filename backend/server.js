@@ -7,8 +7,9 @@ const supabase = require("./config/supabase");
 
 const app = express();
 
-const smsRoutes = require("./routes/sms")();
-const wardRoutes = require("./routes/ward")(supabase);
+const smsRoutes = require("./routes/api-v2/sms")();
+const wardRoutes = require("./routes/api-v2/ward")(supabase);
+const enterpriseRoutes = require("./routes/api-v2");
 
 // =====================
 // Middlewares
@@ -24,6 +25,7 @@ app.use(express.json());
 // =====================
 app.use("/api/sms", smsRoutes);
 app.use("/api/ward", wardRoutes);
+app.use("/api/v2", enterpriseRoutes);
 
 // Root Route
 app.get("/", (req, res) => {
