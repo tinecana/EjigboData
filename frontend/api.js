@@ -75,5 +75,6 @@ const API = {
         return await res.json();
 
     }
-
+    
 };
+window.API = API;

@@ -16,10 +16,52 @@
 
 const express = require("express");
 const { query, withTransaction } = require("../database/db");
-const { sendSuccess, ApiError, asyncHandler } = require("../utils/response");
+const { sendSuccess, ApiError, asyncHandler, buildConflictError } = require("../utils/response");
 
 const MAX_PAGE_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 50;
+const METADATA_COLUMNS = [
+  "version",
+  "created_at",
+  "updated_at",
+  "created_by",
+  "updated_by",
+  "device_id",
+  "sync_version",
+  "last_synced_at",
+  "deleted_at",
+  "deleted",
+  "is_deleted"
+];
+
+function getBodyValue(body, columnName) {
+  const camelCaseName = columnName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  return body[columnName] !== undefined ? body[columnName] : body[camelCaseName];
+}
+
+function hasBodyValue(body, columnName) {
+  return getBodyValue(body, columnName) !== undefined;
+}
+
+function buildVersionConflictError(table, req, body, existingRecord, conflictingFields = []) {
+  const incomingVersion = getBodyValue(body || {}, "version");
+  const normalizedBody = body || {};
+  return buildConflictError({
+    entity: table,
+    entityId: req.params.id,
+    localVersion: incomingVersion !== undefined ? Number(incomingVersion) : undefined,
+    remoteVersion: Number(existingRecord?.version || 1),
+    localUpdatedAt: getBodyValue(normalizedBody, "updated_at") ?? getBodyValue(normalizedBody, "updatedAt"),
+    remoteUpdatedAt: existingRecord?.updated_at,
+    localUpdatedBy: getBodyValue(normalizedBody, "updated_by") ?? getBodyValue(normalizedBody, "updatedBy"),
+    remoteUpdatedBy: existingRecord?.updated_by,
+    deviceId: getBodyValue(normalizedBody, "device_id") ?? getBodyValue(normalizedBody, "deviceId"),
+    conflictingFields,
+    mergePolicy: getBodyValue(normalizedBody, "merge_policy") ?? getBodyValue(normalizedBody, "mergePolicy") ?? "newest_wins",
+    serverRecord: existingRecord,
+    clientRecord: { id: req.params.id, ...normalizedBody }
+  });
+}
 
 /**
  * @param {string} table - physical table name (from schema, trusted)
@@ -115,14 +157,20 @@ function createCrudRouter(table, config) {
       }
     }
 
-    const allowedColumns = [...new Set([...filterableFields, ...requiredOnCreate, ...(config.writableFields || [])])];
-    const columns = allowedColumns.filter(c => body[c] !== undefined);
+    const allowedColumns = [...new Set([
+      ...filterableFields,
+      ...requiredOnCreate,
+      ...(config.writableFields || []),
+      ...METADATA_COLUMNS.filter(c => hasBodyValue(body, c)),
+      ...(body.id !== undefined ? ["id"] : [])
+    ])];
+    const columns = allowedColumns.filter(c => hasBodyValue(body, c));
 
     if (columns.length === 0) {
       throw new ApiError(400, "VALIDATION_ERROR", "No writable fields supplied.");
     }
 
-    const values = columns.map(c => body[c]);
+    const values = columns.map(c => getBodyValue(body, c));
     const placeholders = columns.map((_, i) => `$${i + 1}`);
 
     const created = await withTransaction(async (client) => {
@@ -141,8 +189,13 @@ function createCrudRouter(table, config) {
   // -------------------------------------------------------------
   router.put("/:id", asyncHandler(async (req, res) => {
     const body = req.body || {};
-    const allowedColumns = [...new Set([...filterableFields, ...requiredOnCreate, ...(config.writableFields || [])])];
-    const columns = allowedColumns.filter(c => body[c] !== undefined);
+    const allowedColumns = [...new Set([
+      ...filterableFields,
+      ...requiredOnCreate,
+      ...(config.writableFields || []),
+      ...METADATA_COLUMNS.filter(c => hasBodyValue(body, c))
+    ])];
+    const columns = allowedColumns.filter(c => hasBodyValue(body, c));
 
     const updated = await withTransaction(async (client) => {
       const existing = await client.query(`select * from ${table} where id = $1 and deleted = false for update`, [req.params.id]);
@@ -150,13 +203,25 @@ function createCrudRouter(table, config) {
         throw new ApiError(404, "NOT_FOUND", `${table} record ${req.params.id} not found.`);
       }
 
+      const incomingVersion = getBodyValue(body, "version");
+      if (incomingVersion !== undefined && Number(existing.rows[0].version || 1) !== Number(incomingVersion)) {
+        const conflictPayload = buildVersionConflictError(
+          table,
+          req,
+          body,
+          existing.rows[0],
+          columns.filter(c => !["version", "updated_at", "updated_by", "device_id", "sync_version", "last_synced_at"].includes(c))
+        );
+        throw new ApiError(409, "VERSION_CONFLICT", `Record version conflict for ${table} ${req.params.id}.`, conflictPayload);
+      }
+
       const setClauses = columns.map((c, i) => `${c} = $${i + 2}`);
       setClauses.push(`updated_at = now()`);
       setClauses.push(`version = version + 1`);
-      if (body.updated_by !== undefined) setClauses.push(`updated_by = $${columns.length + 2}`);
+      if (hasBodyValue(body, "updated_by")) setClauses.push(`updated_by = $${columns.length + 2}`);
 
-      const values = [req.params.id, ...columns.map(c => body[c])];
-      if (body.updated_by !== undefined) values.push(body.updated_by);
+      const values = [req.params.id, ...columns.map(c => getBodyValue(body, c))];
+      if (hasBodyValue(body, "updated_by")) values.push(getBodyValue(body, "updated_by"));
 
       const result = await client.query(
         `update ${table} set ${setClauses.join(", ")} where id = $1 returning *`,
@@ -176,6 +241,11 @@ function createCrudRouter(table, config) {
       const existing = await client.query(`select * from ${table} where id = $1 and deleted = false for update`, [req.params.id]);
       if (existing.rows.length === 0) {
         throw new ApiError(404, "NOT_FOUND", `${table} record ${req.params.id} not found.`);
+      }
+      const incomingVersion = req.body ? getBodyValue(req.body, "version") : undefined;
+      if (incomingVersion !== undefined && Number(existing.rows[0].version || 1) !== Number(incomingVersion)) {
+        const conflictPayload = buildVersionConflictError(table, req, req.body || {}, existing.rows[0], ["deleted"]);
+        throw new ApiError(409, "VERSION_CONFLICT", `Record version conflict for ${table} ${req.params.id}.`, conflictPayload);
       }
       const result = await client.query(
         `update ${table} set deleted = true, deleted_at = now(), updated_at = now(), version = version + 1 where id = $1 returning *`,

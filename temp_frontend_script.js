@@ -1,341 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>PWMS - Political Ward Management System</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
-<script src="https://unpkg.com/html5-qrcode" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-
-<style>
-:root{
-  --primary:#0B3D91;
-  --primary-2:#072b66;
-  --gold:#D4AF37;
-  --success:#16a34a;
-  --warning:#f59e0b;
-  --danger:#dc2626;
-  --bg:#f5f7fb;
-  --surface:#ffffff;
-  --surface-2:#f8fafc;
-  --text:#111827;
-  --muted:#64748b;
-  --border:#e2e8f0;
-  --shadow:0 18px 50px rgba(15,23,42,.08);
-  --radius:8px;
-}
-
-[data-theme="dark"]{
-  --bg:#07111f;
-  --surface:#0f1d33;
-  --surface-2:#13243d;
-  --text:#f8fafc;
-  --muted:#94a3b8;
-  --border:#26364f;
-  --shadow:0 18px 50px rgba(0,0,0,.35);
-}
-
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;min-height:100%;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-body{padding:0;line-height:1.5}
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-.hidden{display:none!important}
-
-.app-shell{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
-.sidebar{background:linear-gradient(180deg,var(--primary),var(--primary-2));color:white;padding:18px;position:sticky;top:0;height:100vh;overflow:auto}
-.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
-.logo{width:44px;height:44px;border-radius:8px;background:white;color:var(--primary);display:grid;place-items:center;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.16)}
-.brand h1{font-size:1rem;margin:0;font-weight:900}
-.brand p{margin:2px 0 0;font-size:.72rem;opacity:.8}
-
-.nav-group{display:grid;gap:6px}
-.nav-btn{width:100%;border:0;background:transparent;color:rgba(255,255,255,.78);display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:8px;text-align:left;font-weight:800}
-.nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.14);color:white}
-.nav-icon{width:24px;text-align:center}
-
-.sidebar-footer{margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,.18);display:grid;gap:10px}
-.user-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:12px}
-.user-pill strong{display:block}
-.user-pill span{font-size:.78rem;opacity:.82}
-
-.main{min-width:0}
-.topbar{height:72px;background:rgba(255,255,255,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50}
-[data-theme="dark"] .topbar{background:rgba(15,29,51,.88)}
-.page-title{display:flex;align-items:center;gap:12px}
-.page-title h2{margin:0;font-size:1.15rem}
-.page-title p{margin:2px 0 0;color:var(--muted);font-size:.78rem}
-.top-actions{display:flex;gap:8px;align-items:center}
-
-.content{padding:24px;max-width:1440px;margin:0 auto}
-.page{display:none;animation:fadeIn .22s ease}
-.page.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-.grid{display:grid;gap:16px}
-.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
-.card.compact{padding:14px}
-.card-title{margin:0 0 12px;font-size:.95rem;font-weight:900}
-.muted{color:var(--muted)}
-.kpi{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.kpi-value{font-size:2rem;font-weight:950;color:var(--primary);line-height:1}
-.kpi-label{font-size:.78rem;color:var(--muted);font-weight:800;text-transform:uppercase;margin-top:8px}
-.kpi-icon{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;background:#eaf1ff;color:var(--primary);font-weight:900}
-[data-theme="dark"] .kpi-icon{background:#162c52}
-
-.btn{border:0;border-radius:8px;padding:10px 14px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px}
-.btn-primary{background:var(--primary);color:white}
-.btn-gold{background:var(--gold);color:#1f2937}
-.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
-.btn-danger{background:#fee2e2;color:var(--danger)}
-.btn-success{background:#dcfce7;color:#166534}
-.btn-sm{min-height:34px;padding:7px 10px;font-size:.82rem}
-.btn-full{width:100%}
-
-.input,.select,.textarea{width:100%;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:11px 12px;outline:none}
-.textarea{min-height:110px;resize:vertical}
-.input:focus,.select:focus,.textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(11,61,145,.12)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.label{font-size:.78rem;font-weight:900;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block}
-
-.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
-table{width:100%;border-collapse:collapse;min-width:760px}
-th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:.88rem}
-th{font-size:.75rem;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
-tr:hover td{background:var(--surface-2)}
-
-.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:.72rem;font-weight:900}
-.badge-success{background:#dcfce7;color:#166534}
-.badge-warning{background:#ffedd5;color:#9a3412}
-.badge-danger{background:#fee2e2;color:#991b1b}
-.badge-blue{background:#dbeafe;color:#1d4ed8}
-.badge-gold{background:#fef3c7;color:#92400e}
-
-.searchbar{display:flex;gap:10px;margin-bottom:16px}
-.searchbar .input{flex:1}
-
-.auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,#071f49,#0B3D91 56%,#0f172a);z-index:9999;display:grid;place-items:center;padding:18px;color:white}
-.auth-card{width:min(460px,100%);background:rgba(255,255,255,.96);color:#111827;border-radius:12px;padding:24px;box-shadow:0 30px 90px rgba(0,0,0,.35)}
-.auth-logo{width:64px;height:64px;border-radius:12px;background:var(--primary);color:white;display:grid;place-items:center;font-size:1.4rem;font-weight:950;margin-bottom:14px}
-.auth-card h1{margin:0;font-size:1.45rem}
-.auth-card p{margin:6px 0 18px;color:#64748b}
-.auth-step{display:none}
-.auth-step.active{display:block}
-.splash-mark{text-align:center}
-.splash-mark .auth-logo{margin:0 auto 16px}
-.progress{height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:18px}
-.progress span{display:block;height:100%;width:0;background:var(--gold);animation:load 1.2s forwards}
-@keyframes load{to{width:100%}}
-
-.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(8px);z-index:200;display:none;align-items:flex-end;justify-content:center;padding:18px}
-.modal-backdrop.show{display:flex}
-.modal{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;width:min(560px,100%);box-shadow:0 30px 100px rgba(0,0,0,.28);max-height:90vh;overflow:auto}
-.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
-.modal-head h3{margin:0}
-.modal-body{padding:18px}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;padding:16px 18px;border-top:1px solid var(--border)}
-
-.modal-body .table-wrap{max-height:320px;overflow:auto}
-
-.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:500;display:grid;gap:10px;width:min(360px,calc(100% - 36px))}
-.toast{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-left:4px solid var(--primary);border-radius:8px;padding:12px}
-.toast strong{display:block}
-
-.profile{display:grid;grid-template-columns:220px 1fr;gap:18px}
-.avatar{width:128px;height:128px;border-radius:12px;background:linear-gradient(135deg,#dbeafe,#fef3c7);display:grid;place-items:center;font-size:2.2rem;font-weight:950;color:var(--primary);overflow:hidden}
-.avatar img{width:100%;height:100%;object-fit:cover}
-.timeline{display:grid;gap:10px}
-.timeline-item{border-left:3px solid var(--primary);padding-left:12px}
-
-.chart{height:220px;display:flex;align-items:end;gap:10px;padding-top:20px}
-.bar{flex:1;background:linear-gradient(180deg,var(--primary),#6aa4ff);border-radius:6px 6px 0 0;min-height:18px;position:relative}
-.bar span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:.7rem;font-weight:900;margin-bottom:4px;color:var(--muted)}
-
-.qr-card-preview{width:320px;max-width:100%;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:white;color:#111827}
-.id-front{padding:16px;background:linear-gradient(135deg,#0B3D91,#08285f);color:white}
-.id-body{padding:16px;text-align:center}
-.qr-box{display:grid;place-items:center;margin:10px auto;background:white;padding:10px;width:140px;min-height:140px}
-
-.mobile-menu{display:none}
-
-@media(max-width:920px){
-  .app-shell{grid-template-columns:1fr}
-  .sidebar{position:fixed;left:0;top:0;bottom:0;width:290px;z-index:120;transform:translateX(-105%);transition:.22s ease}
-  .sidebar.open{transform:none}
-  .mobile-menu{display:inline-flex}
-  .content{padding:16px}
-  .topbar{padding:0 14px}
-  .grid-2,.grid-3,.grid-4,.form-row,.profile{grid-template-columns:1fr}
-  .page-title p{display:none}
-}
-
-@media print{
-  .sidebar,.topbar,.no-print,.toast-wrap{display:none!important}
-  .app-shell{display:block}
-  .content{padding:0}
-  .page{display:block}
-}
-</style>
-</head>
-
-<body>
-<div id="authScreen" class="auth-screen">
-  <div class="auth-card">
-    <div id="splashStep" class="auth-step active">
-      <div class="splash-mark">
-        <div class="auth-logo">PW</div>
-        <h1>Political Ward Management System</h1>
-        <p>Professional Political Administration Platform</p>
-        <div class="progress"><span></span></div>
-      </div>
-    </div>
-
-    <div id="wardStep" class="auth-step">
-      <div class="auth-logo">PW</div>
-      <h1>Select Ward</h1>
-      <p>Choose the ward you want to administer.</p>
-      <label class="label">Ward</label>
-      <select id="loginWard" class="select"></select>
-      <div style="height:12px"></div>
-      <label class="label">Role</label>
-      <select id="loginRole" class="select">
-        <option>Administrator</option>
-        <option>Chairman</option>
-        <option>Secretary</option>
-        <option>Treasurer</option>
-        <option>Volunteer</option>
-        <option>Viewer</option>
-      </select>
-      <div style="height:16px"></div>
-      <button class="btn btn-primary btn-full" onclick="goPassword()">Continue</button>
-    </div>
-
-    <div id="passwordStep" class="auth-step">
-      <div class="auth-logo">PW</div>
-      <h1>Secure Access</h1>
-      <p id="passwordSubtitle">Enter ward password.</p>
-      <label class="label">Password</label>
-      <input id="loginPassword" type="password" class="input" placeholder="Enter password" onkeydown="if(event.key==='Enter') authenticate()" />
-      <div style="height:12px"></div>
-      <label style="display:flex;align-items:center;gap:8px;color:#475569;font-size:.9rem">
-        <input id="rememberLogin" type="checkbox" />
-        Remember this device
-      </label>
-      <div style="height:16px"></div>
-      <button class="btn btn-primary btn-full" onclick="authenticate()">Unlock Dashboard</button>
-      <div style="height:10px"></div>
-      <button class="btn btn-outline btn-full" onclick="showAuthStep('wardStep')">Back</button>
-      <p style="font-size:.78rem;margin-top:16px">
-        Default demo password for each ward is <strong>password</strong>. Change this in Security settings.
-      </p>
-    </div>
-  </div>
-</div>
-
-<div id="appShell" class="app-shell hidden">
-  <aside id="sidebar" class="sidebar">
-    <div class="brand">
-      <div class="logo">PW</div>
-      <div>
-        <h1>PWMS</h1>
-        <p>Professional Political Administration Platform</p>
-      </div>
-    </div>
-
-    <div class="nav-group" id="navGroup"></div>
-
-    <div class="sidebar-footer">
-      <div class="user-pill">
-        <strong id="sideUser">Administrator</strong>
-        <span id="sideWard">Aigbaka Ward</span>
-      </div>
-      <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,.25)" onclick="logout()">Logout</button>
-    </div>
-  </aside>
-
-  <main class="main">
-    <div id="apiUnavailableBanner" class="hidden" style="background:#fef2f2;color:#991b1b;border-bottom:1px solid #fecaca;padding:8px 16px;font-size:0.85rem;font-weight:700;text-align:center">
-      ⚠️ Cloud sync is unavailable right now (api.js failed to load). You can keep working — changes are saved on this device and will sync automatically once this is resolved.
-    </div>
-    <header class="topbar">
-      <button class="btn btn-outline mobile-menu" onclick="toggleSidebar()">Menu</button>
-      <div class="page-title">
-        <div class="kpi-icon" id="currentPageIcon">📊</div>
-        <div>
-          <h2 id="currentPageTitle">Dashboard</h2>
-          <p id="currentPageSubtitle">Executive overview and ward intelligence</p>
-        </div>
-      </div>
-      <div class="top-actions">
-        <span id="connectionStatus" style="font-size:0.85rem;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--surface-2,#f3f4f6)">🟢 Online</span>
-        <span id="syncStatusBadge" style="font-size:0.85rem;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--surface-2,#f3f4f6)">✅ Synced</span>
-        <button class="btn btn-outline btn-sm" onclick="syncQueue()" title="Sync pending changes now">🔄 Sync Now</button>
-        <input id="globalSearch" class="input" style="width:240px" placeholder="Search members, streets, units..." oninput="runGlobalSearch(this.value)" />
-        <button class="btn btn-outline" onclick="toggleTheme()">Theme</button>
-        <button class="btn btn-gold" onclick="showPage('notifications')">Alerts</button>
-      </div>
-    </header>
-
-    <section class="content">
-      <div id="dashboard" class="page active"></div>
-      <div id="members" class="page"></div>
-      <div id="polling-units" class="page"></div>
-      <div id="streets" class="page"></div>
-      <div id="executives" class="page"></div>
-      <div id="attendance" class="page"></div>
-      <div id="meetings" class="page"></div>
-      <div id="campaigns" class="page"></div>
-      <div id="communications" class="page"></div>
-      <div id="reports" class="page"></div>
-      <div id="conflicts" class="page"></div>
-      <div id="settings" class="page"></div>
-      <div id="security" class="page"></div>
-      <div id="backup" class="page"></div>
-      <div id="administration" class="page"></div>
-      <div id="notifications" class="page"></div>
-      <div id="member-profile" class="page"></div>
-    </section>
-  </main>
-</div>
-
-<div id="modalBackdrop" class="modal-backdrop">
-  <div class="modal">
-    <div class="modal-head">
-      <h3 id="modalTitle">Dialog</h3>
-      <button class="btn btn-outline btn-sm" onclick="closeModal()">Close</button>
-    </div>
-    <div id="modalBody" class="modal-body"></div>
-    <div id="modalActions" class="modal-actions"></div>
-  </div>
-</div>
-
-<div id="toastWrap" class="toast-wrap"></div>
-
-
-
-
-
-<!-- QR SCANNER MODAL -->
-<div id="qrScannerModal" class="modal-backdrop">
-  <div class="modal">
-    <div class="modal-head">
-      <h3>Scan Member QR</h3>
-      <button class="btn btn-danger btn-sm" onclick="closeQRScanner()">Close</button>
-    </div>
-    <div class="modal-body">
-      <div id="qr-reader"></div>
-      <p class="muted">Point the camera at a valid PWMS member QR code.</p>
-    </div>
-  </div>
-</div>
-<script src="api.js"></script>
-
-<script>
+﻿
 /* =========================================================
    PWMS SINGLE FILE ENTERPRISE COMPATIBILITY BUILD
    Preserves existing localStorage data key: ejigbo_ward_data
@@ -367,11 +30,11 @@ const SMS_PRICE = 6.50;
 /*
  * api.js (loaded via <script src="api.js"> above, before this script
  * block) defines the global `API` object. If that file fails to load
- * — a 404, a network block, an ad-blocker, a bad deploy — any code
+ * â€” a 404, a network block, an ad-blocker, a bad deploy â€” any code
  * referencing the bare identifier `API` throws an uncaught
  * ReferenceError, because an undeclared global is not just undefined,
  * it doesn't exist. Everything that touches the API layer must go
- * through window.API (safe to reference — evaluates to undefined
+ * through window.API (safe to reference â€” evaluates to undefined
  * rather than throwing) and isApiAvailable(), not the bare name.
  */
 function isApiAvailable(){
@@ -393,7 +56,7 @@ function waitForApi(timeoutMs = 3000, intervalMs = 100){
 }
 
 function showApiUnavailableNotice(){
-  console.error("[OFFLINE] api.js did not load — cloud sync is unavailable. The app will continue working locally.");
+  console.error("[OFFLINE] api.js did not load â€” cloud sync is unavailable. The app will continue working locally.");
   const banner = document.getElementById("apiUnavailableBanner");
   if(banner) banner.classList.remove("hidden");
 }
@@ -412,8 +75,8 @@ let isOnline = navigator.onLine;
 function updateConnectionIndicator(){
   const el = document.getElementById("connectionStatus");
   if(!el) return;
-  el.textContent = isOnline ? "🟢 Online" : "🔴 Offline";
-  el.title = isOnline ? "Connected — changes sync to Supabase" : "Offline — changes are saved on this device";
+  el.textContent = isOnline ? "ðŸŸ¢ Online" : "ðŸ”´ Offline";
+  el.title = isOnline ? "Connected â€” changes sync to Supabase" : "Offline â€” changes are saved on this device";
 }
 
 window.addEventListener("online", () => {
@@ -421,7 +84,7 @@ window.addEventListener("online", () => {
   updateConnectionIndicator();
   console.log("[ONLINE] Connection restored");
   if(!FEATURE_FLAGS.recordSync) return;
-  // Connection restored: refresh remote first, then flush the sync queue — never blocks the UI.
+  // Connection restored: refresh remote first, then flush the sync queue â€” never blocks the UI.
   if(typeof refreshFromRemote === "function"){
     refreshFromRemote().then(() => {
       if(typeof syncQueue === "function") syncQueue();
@@ -432,25 +95,24 @@ window.addEventListener("online", () => {
 window.addEventListener("offline", () => {
   isOnline = false;
   updateConnectionIndicator();
-  console.log("[OFFLINE] Connection lost — continuing in offline mode");
+  console.log("[OFFLINE] Connection lost â€” continuing in offline mode");
 });
 
 const MODULES = [
-  {id:"dashboard", label:"Dashboard", icon:"📊", subtitle:"Executive overview and ward intelligence"},
-  {id:"members", label:"Members", icon:"👥", subtitle:"Professional member records and profiles"},
-  {id:"polling-units", label:"Polling Units", icon:"🏛️", subtitle:"Polling unit performance and leadership"},
-  {id:"streets", label:"Streets", icon:"🛣️", subtitle:"Street-level membership intelligence"},
-  {id:"executives", label:"Executives", icon:"🎖️", subtitle:"Ward executive management"},
-  {id:"attendance", label:"Attendance", icon:"✅", subtitle:"Sessions, QR check-in, reports and approvals"},
-  {id:"meetings", label:"Meetings", icon:"📅", subtitle:"Meetings, minutes, agenda and action points"},
-  {id:"campaigns", label:"Campaigns", icon:"📣", subtitle:"Campaign activities and follow-up"},
-  {id:"communications", label:"Communications", icon:"💬", subtitle:"SMS, WhatsApp, templates and history"},
-  {id:"reports", label:"Reports", icon:"📈", subtitle:"Exportable ward reports and analytics"},
-  {id:"conflicts", label:"Conflicts", icon:"⚖️", subtitle:"Synchronization conflicts and resolution"},
-  {id:"settings", label:"Settings", icon:"⚙️", subtitle:"Ward settings, theme and appearance"},
-  {id:"security", label:"Security", icon:"🔐", subtitle:"Passwords, roles, sessions and audit logs"},
-  {id:"backup", label:"Backup", icon:"💾", subtitle:"Backup, restore, import and export"},
-  {id:"administration", label:"Administration", icon:"🏢", subtitle:"Future-ready administration controls"}
+  {id:"dashboard", label:"Dashboard", icon:"ðŸ“Š", subtitle:"Executive overview and ward intelligence"},
+  {id:"members", label:"Members", icon:"ðŸ‘¥", subtitle:"Professional member records and profiles"},
+  {id:"polling-units", label:"Polling Units", icon:"ðŸ›ï¸", subtitle:"Polling unit performance and leadership"},
+  {id:"streets", label:"Streets", icon:"ðŸ›£ï¸", subtitle:"Street-level membership intelligence"},
+  {id:"executives", label:"Executives", icon:"ðŸŽ–ï¸", subtitle:"Ward executive management"},
+  {id:"attendance", label:"Attendance", icon:"âœ…", subtitle:"Sessions, QR check-in, reports and approvals"},
+  {id:"meetings", label:"Meetings", icon:"ðŸ“…", subtitle:"Meetings, minutes, agenda and action points"},
+  {id:"campaigns", label:"Campaigns", icon:"ðŸ“£", subtitle:"Campaign activities and follow-up"},
+  {id:"communications", label:"Communications", icon:"ðŸ’¬", subtitle:"SMS, WhatsApp, templates and history"},
+  {id:"reports", label:"Reports", icon:"ðŸ“ˆ", subtitle:"Exportable ward reports and analytics"},
+  {id:"settings", label:"Settings", icon:"âš™ï¸", subtitle:"Ward settings, theme and appearance"},
+  {id:"security", label:"Security", icon:"ðŸ”", subtitle:"Passwords, roles, sessions and audit logs"},
+  {id:"backup", label:"Backup", icon:"ðŸ’¾", subtitle:"Backup, restore, import and export"},
+  {id:"administration", label:"Administration", icon:"ðŸ¢", subtitle:"Future-ready administration controls"}
 ];
 
 const ROLE_PERMISSIONS = {
@@ -478,896 +140,6 @@ let dbReadyPromise = null;
 let db = {};
 let html5QrCode = null;
 let sessionTimer = null;
-
-const CONFLICT_QUEUE_KEY = "pwms_conflict_queue";
-const CONFLICT_AUDIT_KEY = "pwms_conflict_audit";
-const CONFLICT_POLICY_KEY = "pwms_conflict_policy_config";
-const CONFLICT_MANAGER_STATE_KEY = "pwms_conflict_manager_state";
-const DEFAULT_CONFLICT_POLICIES = {
-  ward: "administrator_review",
-  member: "manual_review",
-  street: "newest_wins",
-  executive: "manual_review",
-  meeting: "field_merge",
-  campaign: "manual_review",
-  "attendance-session": "manual_review",
-  attendance: "newest_wins",
-  notifications: "remote_wins",
-  settings: "administrator_review"
-};
-const MERGE_REPLAY_KEY = "pwms_merge_replay_queue";
-const MERGE_HISTORY_KEY = "pwms_merge_history";
-let mergeReplayQueueCache = [];
-let mergeHistoryCache = [];
-let conflictQueueCache = [];
-let conflictAuditCache = [];
-let conflictManagerState = {
-  conflicts: [],
-  lastUpdatedAt: null
-};
-
-function getDeviceId(){
-  try{
-    const existing = localStorage.getItem("pwms_device_id");
-    if(existing) return existing;
-    const deviceId = `device-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    localStorage.setItem("pwms_device_id", deviceId);
-    return deviceId;
-  }catch(e){
-    return "browser-device";
-  }
-}
-
-function ensureRecordMetadata(record, entityName){
-  if(!record || typeof record !== "object") return record;
-  const now = new Date().toISOString();
-  const copy = {...record};
-
-  if(typeof copy.version === "undefined" || copy.version === null || copy.version === "") copy.version = 1;
-  if(!copy.createdAt) copy.createdAt = copy.created_at || copy.createdAt || now;
-  if(!copy.updatedAt) copy.updatedAt = copy.updated_at || copy.updatedAt || now;
-  if(!copy.createdBy) copy.createdBy = copy.created_by || currentUser || "system";
-  if(!copy.updatedBy) copy.updatedBy = copy.updated_by || currentUser || copy.createdBy || "system";
-  if(!copy.deviceId) copy.deviceId = getDeviceId();
-  if(typeof copy.syncVersion === "undefined" || copy.syncVersion === null) copy.syncVersion = 1;
-  if(!copy.lastSyncedAt) copy.lastSyncedAt = copy.last_synced_at || copy.updatedAt || now;
-  if(typeof copy.deletedAt === "undefined") copy.deletedAt = copy.deleted_at || null;
-  if(typeof copy.isDeleted === "undefined") copy.isDeleted = Boolean(copy.deleted || copy.isDeleted);
-  if(copy.deleted === true) copy.isDeleted = true;
-  if(entityName && copy.entity === undefined) copy.entity = entityName;
-  return copy;
-}
-
-function prepareEntityRecordForPersist(entityName, incoming, existingRecord = null){
-  const now = new Date().toISOString();
-  const base = {
-    ...(existingRecord || {}),
-    ...(incoming || {})
-  };
-  const isUpdate = Boolean(existingRecord && (incoming && incoming.id && existingRecord.id === incoming.id) || (incoming && incoming.qrId && existingRecord.qrId === incoming.qrId));
-  const nextVersion = isUpdate ? (Number(existingRecord.version || 0) + 1) : (Number(base.version || existingRecord?.version || 0) || 1);
-  return ensureRecordMetadata({
-    ...base,
-    version: nextVersion,
-    createdAt: base.createdAt || existingRecord?.createdAt || now,
-    updatedAt: now,
-    createdBy: base.createdBy || existingRecord?.createdBy || currentUser || "system",
-    updatedBy: currentUser || base.updatedBy || existingRecord?.updatedBy || "system",
-    deviceId: base.deviceId || existingRecord?.deviceId || getDeviceId(),
-    syncVersion: Number(base.syncVersion || existingRecord?.syncVersion || 1),
-    lastSyncedAt: now,
-    deletedAt: base.deletedAt || existingRecord?.deletedAt || null,
-    isDeleted: Boolean(base.isDeleted || existingRecord?.isDeleted || false)
-  }, entityName);
-}
-
-function normalizeRecordCollection(items, entityName){
-  if(!Array.isArray(items)) return items;
-  return items.map(item => ensureRecordMetadata(item, entityName));
-}
-
-function normalizeWardData(wardData){
-  if(!wardData || typeof wardData !== "object") return wardData;
-
-  wardData.wardStreets = normalizeRecordCollection(wardData.wardStreets || [], "street");
-  wardData.excos = normalizeRecordCollection(wardData.excos || [], "executive");
-  wardData.meetings = normalizeRecordCollection(wardData.meetings || [], "meeting");
-  wardData.campaigns = normalizeRecordCollection(wardData.campaigns || [], "campaign");
-  wardData.attendanceSessions = normalizeRecordCollection(wardData.attendanceSessions || [], "attendance-session");
-  wardData.communications = normalizeRecordCollection(wardData.communications || [], "communication");
-  wardData.announcements = normalizeRecordCollection(wardData.announcements || [], "announcement");
-
-  wardData.voters = wardData.voters || {GEN: []};
-  Object.keys(wardData.voters).forEach(unitNum => {
-    wardData.voters[unitNum] = normalizeRecordCollection(wardData.voters[unitNum] || [], "member");
-  });
-
-  return wardData;
-}
-
-function loadConflictPolicies(){
-  try{
-    const parsed = safeJsonParse(localStorage.getItem(CONFLICT_POLICY_KEY), {});
-    return {...DEFAULT_CONFLICT_POLICIES, ...(parsed || {})};
-  }catch(e){
-    return {...DEFAULT_CONFLICT_POLICIES};
-  }
-}
-
-function saveConflictPolicies(policies){
-  localStorage.setItem(CONFLICT_POLICY_KEY, JSON.stringify(policies));
-}
-
-function getConflictPolicy(entity){
-  const policies = loadConflictPolicies();
-  if(entity && policies[entity]) return policies[entity];
-  if(entity && entity !== "default" && policies.default) return policies.default;
-  return DEFAULT_CONFLICT_POLICIES[entity] || policies.default || "manual_review";
-}
-
-function setConflictPolicy(entity, policy){
-  const policies = loadConflictPolicies();
-  policies[entity] = policy;
-  saveConflictPolicies(policies);
-  audit("Conflict policy updated", {entity, policy});
-}
-
-function loadConflictQueue(){
-  try{
-    const parsed = safeJsonParse(localStorage.getItem(CONFLICT_QUEUE_KEY), []);
-    conflictQueueCache = Array.isArray(parsed) ? parsed : [];
-  }catch(e){
-    conflictQueueCache = [];
-  }
-  return conflictQueueCache;
-}
-
-function loadMergeReplayQueue(){
-  try{
-    const parsed = safeJsonParse(localStorage.getItem(MERGE_REPLAY_KEY), []);
-    mergeReplayQueueCache = Array.isArray(parsed) ? parsed : [];
-  }catch(e){
-    mergeReplayQueueCache = [];
-  }
-  return mergeReplayQueueCache;
-}
-
-function saveMergeReplayQueue(){
-  localStorage.setItem(MERGE_REPLAY_KEY, JSON.stringify(mergeReplayQueueCache));
-}
-
-function loadMergeHistory(){
-  try{
-    const parsed = safeJsonParse(localStorage.getItem(MERGE_HISTORY_KEY), []);
-    mergeHistoryCache = Array.isArray(parsed) ? parsed : [];
-  }catch(e){
-    mergeHistoryCache = [];
-  }
-  return mergeHistoryCache;
-}
-
-function saveMergeHistory(){
-  localStorage.setItem(MERGE_HISTORY_KEY, JSON.stringify(mergeHistoryCache));
-}
-
-function recordMergeHistory(entry){
-  const historyEntry = {
-    id: entry.id || makeId("MH"),
-    timestamp: entry.timestamp || new Date().toISOString(),
-    entity: entry.entity || "unknown",
-    entityId: entry.entityId || null,
-    conflictId: entry.conflictId || null,
-    mergePolicy: entry.mergePolicy || "manual_review",
-    confidence: entry.confidence || 0,
-    mergeReason: entry.mergeReason || "manual-review",
-    mergedFields: entry.mergedFields || [],
-    conflictingFields: entry.conflictingFields || [],
-    deviceIds: entry.deviceIds || [],
-    administrator: entry.administrator || currentUser || null,
-    status: entry.status || "merged"
-  };
-  const history = loadMergeHistory();
-  history.unshift(historyEntry);
-  mergeHistoryCache = history.slice(0, 80);
-  saveMergeHistory();
-  return historyEntry;
-}
-
-function saveConflictQueue(){
-  localStorage.setItem(CONFLICT_QUEUE_KEY, JSON.stringify(conflictQueueCache));
-  persistConflictManagerState();
-}
-
-function loadConflictManagerState(){
-  try{
-    const parsed = safeJsonParse(localStorage.getItem(CONFLICT_MANAGER_STATE_KEY), {conflicts: [], lastUpdatedAt: null});
-    conflictManagerState = {
-      conflicts: Array.isArray(parsed && parsed.conflicts) ? parsed.conflicts : [],
-      lastUpdatedAt: parsed && parsed.lastUpdatedAt ? parsed.lastUpdatedAt : null
-    };
-  }catch(e){
-    conflictManagerState = {conflicts: [], lastUpdatedAt: null};
-  }
-  return conflictManagerState;
-}
-
-function persistConflictManagerState(){
-  const state = {
-    conflicts: conflictQueueCache.map(item => ({...item})),
-    lastUpdatedAt: new Date().toISOString()
-  };
-  conflictManagerState = state;
-  localStorage.setItem(CONFLICT_MANAGER_STATE_KEY, JSON.stringify(state));
-}
-
-function loadConflictAudit(){
-  try{
-    const parsed = safeJsonParse(localStorage.getItem(CONFLICT_AUDIT_KEY), []);
-    conflictAuditCache = Array.isArray(parsed) ? parsed : [];
-  }catch(e){
-    conflictAuditCache = [];
-  }
-  return conflictAuditCache;
-}
-
-function saveConflictAudit(){
-  localStorage.setItem(CONFLICT_AUDIT_KEY, JSON.stringify(conflictAuditCache));
-}
-
-function recordConflictAudit(entry){
-  const auditEntry = {
-    id: entry.id || makeId("CFA"),
-    timestamp: entry.timestamp || new Date().toISOString(),
-    user: entry.user || currentUser,
-    administrator: entry.administrator || currentUser,
-    device: entry.device || getDeviceId(),
-    entity: entry.entity || "unknown",
-    recordId: entry.recordId || entry.entityId || null,
-    conflictId: entry.conflictId || null,
-    action: entry.action || "sync-decision",
-    actionTaken: entry.actionTaken || entry.action || "sync-decision",
-    previousVersion: entry.previousVersion ?? null,
-    newVersion: entry.newVersion ?? null,
-    policyApplied: entry.policyApplied || "n/a",
-    mergePolicy: entry.mergePolicy || entry.policyApplied || "n/a",
-    oldValue: entry.oldValue || null,
-    newValue: entry.newValue || null,
-    reason: entry.reason || null,
-    detail: entry.detail || null
-  };
-  const logs = loadConflictAudit();
-  logs.unshift(auditEntry);
-  conflictAuditCache = logs.slice(0, 80);
-  saveConflictAudit();
-}
-
-function createConflictManager(){
-  return {
-    addConflict(conflict){
-      const queue = loadConflictQueue();
-      const entity = conflict.entity || "ward";
-      const entityId = conflict.entityId || null;
-      const candidateId = conflict.id || null;
-      const existing = queue.find(item => {
-        const sameIdentity = candidateId ? item.id === candidateId : false;
-        const samePendingEntity = !candidateId && item.entity === entity && item.entityId === entityId && ["pending", "pending_admin_approval", "pending_review", "assigned"].includes(item.status || item.reviewStatus || "");
-        return sameIdentity || samePendingEntity;
-      });
-
-      if(existing){
-        existing.entity = entity;
-        existing.entityId = entityId;
-        existing.operation = conflict.operation || existing.operation || "update";
-        existing.status = conflict.status || existing.status || "pending";
-        existing.policy = conflict.policy || existing.policy || getConflictPolicy(entity);
-        existing.localRecord = conflict.localRecord || existing.localRecord || null;
-        existing.remoteRecord = conflict.remoteRecord || existing.remoteRecord || null;
-        existing.localVersion = conflict.localVersion !== undefined ? conflict.localVersion : existing.localVersion;
-        existing.remoteVersion = conflict.remoteVersion !== undefined ? conflict.remoteVersion : existing.remoteVersion;
-        existing.summary = conflict.summary || existing.summary || "Record version mismatch detected.";
-        existing.conflictType = conflict.conflictType || existing.conflictType || "version_mismatch";
-        existing.mergePolicy = conflict.mergePolicy || conflict.policy || existing.mergePolicy || getConflictPolicy(entity);
-        existing.timestamp = conflict.timestamp || existing.timestamp || new Date().toISOString();
-        existing.reviewStatus = conflict.reviewStatus || existing.reviewStatus || "pending_review";
-        existing.assignedTo = conflict.assignedTo || existing.assignedTo || null;
-        existing.reviewedBy = conflict.reviewedBy || existing.reviewedBy || null;
-        existing.reviewedAt = conflict.reviewedAt || existing.reviewedAt || null;
-        existing.auditHistory = Array.isArray(conflict.auditHistory) ? conflict.auditHistory : (existing.auditHistory || []);
-        conflictQueueCache = queue;
-        saveConflictQueue();
-        return existing;
-      }
-
-      const item = {
-        id: candidateId || makeId("CFG"),
-        entity,
-        entityId,
-        operation: conflict.operation || "update",
-        status: conflict.status || "pending",
-        policy: conflict.policy || getConflictPolicy(entity),
-        localRecord: conflict.localRecord || null,
-        remoteRecord: conflict.remoteRecord || null,
-        localVersion: conflict.localVersion || null,
-        remoteVersion: conflict.remoteVersion || null,
-        createdAt: conflict.createdAt || new Date().toISOString(),
-        createdBy: conflict.createdBy || currentUser,
-        deviceId: conflict.deviceId || getDeviceId(),
-        summary: conflict.summary || "Record version mismatch detected.",
-        conflictType: conflict.conflictType || "version_mismatch",
-        mergePolicy: conflict.mergePolicy || conflict.policy || getConflictPolicy(entity),
-        timestamp: conflict.timestamp || new Date().toISOString(),
-        reviewStatus: conflict.reviewStatus || "pending_review",
-        assignedTo: conflict.assignedTo || null,
-        reviewedBy: conflict.reviewedBy || null,
-        reviewedAt: conflict.reviewedAt || null,
-        auditHistory: Array.isArray(conflict.auditHistory) ? conflict.auditHistory : []
-      };
-      queue.push(item);
-      conflictQueueCache = queue;
-      saveConflictQueue();
-      recordConflictAudit({
-        entity: item.entity,
-        policyApplied: item.policy,
-        action: "conflict-created",
-        oldValue: item.localRecord,
-        newValue: item.remoteRecord,
-        detail: item.summary
-      });
-      return item;
-    },
-    removeConflict(conflictId){
-      const nextQueue = loadConflictQueue().filter(item => item.id !== conflictId);
-      conflictQueueCache = nextQueue;
-      saveConflictQueue();
-      return nextQueue;
-    },
-    resolveConflict(conflictId, decision){
-      const conflict = loadConflictQueue().find(item => item.id === conflictId);
-      if(!conflict) return null;
-      conflict.status = "resolved";
-      conflict.resolvedAt = new Date().toISOString();
-      conflict.resolvedBy = currentUser;
-      conflict.resolution = decision;
-      saveConflictQueue();
-      return conflict;
-    },
-    listConflicts(){
-      return loadConflictQueue();
-    },
-    clearResolved(){
-      const nextQueue = loadConflictQueue().filter(item => item.status !== "resolved");
-      conflictQueueCache = nextQueue;
-      saveConflictQueue();
-      return nextQueue;
-    }
-  };
-}
-
-const conflictManager = createConflictManager();
-
-function enqueueConflict(conflict){
-  return conflictManager.addConflict(conflict);
-}
-
-function removeConflict(conflictId){
-  return conflictManager.removeConflict(conflictId);
-}
-
-function resolveConflict(conflictId, decision){
-  return conflictManager.resolveConflict(conflictId, decision);
-}
-
-function listConflicts(){
-  return conflictManager.listConflicts();
-}
-
-function clearResolved(){
-  return conflictManager.clearResolved();
-}
-
-function isAdministratorRole(){
-  return currentRole === "Administrator";
-}
-
-function getPendingConflicts(){
-  return loadConflictQueue().filter(conflict => ["pending", "pending_admin_approval", "pending_review"].includes(conflict.status));
-}
-
-function getAssignedConflicts(){
-  return loadConflictQueue().filter(conflict => conflict.reviewStatus === "assigned" || conflict.status === "assigned");
-}
-
-function getResolvedConflicts(){
-  return loadConflictQueue().filter(conflict => conflict.status === "resolved");
-}
-
-function getAdministratorReviewConflicts(){
-  return loadConflictQueue().filter(conflict => ["pending_review", "assigned", "resolved"].includes(conflict.reviewStatus || conflict.status));
-}
-
-function buildConflictReviewSummary(conflict){
-  const base = conflict || {};
-  return {
-    id: base.id,
-    entity: base.entity,
-    entityId: base.entityId,
-    status: base.status,
-    reviewStatus: base.reviewStatus || "pending_review",
-    assignedTo: base.assignedTo || null,
-    policy: base.mergePolicy || base.policy || "manual_review",
-    timestamp: base.timestamp || base.createdAt,
-    summary: base.summary || "Conflict pending administrator review."
-  };
-}
-
-function getEntityDisplayName(entity){
-  const names = {
-    ward: "Ward",
-    member: "Member",
-    street: "Street",
-    executive: "Executive",
-    meeting: "Meeting",
-    campaign: "Campaign",
-    "attendance-session": "Attendance Session"
-  };
-  return names[entity] || entity;
-}
-
-function buildDifferenceSummary(localRecord, remoteRecord){
-  const keys = [...new Set([...(Object.keys(localRecord || {})), ...(Object.keys(remoteRecord || {}))])];
-  return keys.filter(key => !["version","createdAt","updatedAt","createdBy","updatedBy","deviceId","syncVersion","lastSyncedAt","deletedAt","isDeleted","entity"].includes(key)).map(key => ({
-    field: key,
-    local: localRecord && localRecord[key],
-    remote: remoteRecord && remoteRecord[key]
-  })).filter(entry => String(entry.local ?? "") !== String(entry.remote ?? ""));
-}
-
-function findEntityRecord(entity, record){
-  const ward = getWard();
-  const id = record && (record.id || record.qrId || record.membershipNumber || record.name);
-
-  if(entity === "member"){
-    const matches = [];
-    Object.keys(ward.voters || {}).forEach(unitNum => {
-      (ward.voters[unitNum] || []).forEach((member, index) => {
-        const match = member.id === id || member.qrId === id || member.membershipNumber === id || member.phone === record.phone;
-        if(match) matches.push({member, unitNum, index});
-      });
-    });
-    return matches[0] || null;
-  }
-
-  if(entity === "street"){
-    const index = (ward.wardStreets || []).findIndex(item => item.id === id || item.name === record.name);
-    return index >= 0 ? {item: ward.wardStreets[index], index} : null;
-  }
-
-  if(entity === "executive"){
-    const index = (ward.excos || []).findIndex(item => item.id === id || item.pos === record.pos);
-    return index >= 0 ? {item: ward.excos[index], index} : null;
-  }
-
-  if(entity === "meeting"){
-    const index = (ward.meetings || []).findIndex(item => item.id === id || item.title === record.title);
-    return index >= 0 ? {item: ward.meetings[index], index} : null;
-  }
-
-  if(entity === "campaign"){
-    const index = (ward.campaigns || []).findIndex(item => item.id === id || item.name === record.name);
-    return index >= 0 ? {item: ward.campaigns[index], index} : null;
-  }
-
-  if(entity === "attendance-session"){
-    const index = (ward.attendanceSessions || []).findIndex(item => item.id === id || item.title === record.title);
-    return index >= 0 ? {item: ward.attendanceSessions[index], index} : null;
-  }
-
-  return null;
-}
-
-function computeFieldLevelMerge(localRecord, remoteRecord){
-  const local = localRecord || {};
-  const remote = remoteRecord || {};
-  const merged = {...remote, ...local};
-  const localKeys = Object.keys(local);
-  const remoteKeys = Object.keys(remote);
-  const allKeys = [...new Set([...localKeys, ...remoteKeys])];
-  const mergedFields = allKeys.filter(key => String(local[key] ?? "") !== String(remote[key] ?? "") && String(local[key] ?? "") !== String(merged[key] ?? ""));
-  const conflictingFields = allKeys.filter(key => String(local[key] ?? "") !== String(remote[key] ?? "") && String(local[key] ?? "") === String(remote[key] ?? ""));
-  return {merged, mergedFields, conflictingFields};
-}
-
-function resolveMergePolicy(entity, policyOverride = null){
-  const policy = policyOverride || getConflictPolicy(entity);
-  return policy;
-}
-
-function applyAutomaticMerge(conflict, policy = null){
-  const entity = conflict.entity;
-  const localRecord = conflict.localRecord || {};
-  const remoteRecord = conflict.remoteRecord || {};
-  const mergePolicy = resolveMergePolicy(entity, policy);
-  const localTime = new Date(localRecord.updatedAt || localRecord.updated_at || 0).getTime();
-  const remoteTime = new Date(remoteRecord.updatedAt || remoteRecord.updated_at || 0).getTime();
-  let outcome = {strategy: "manual_review", resolvedRecord: localRecord, confidence: 40, mergeReason: "Manual review required", mergedFields: [], conflictingFields: []};
-
-  if(mergePolicy === "field_merge"){
-    const {merged, mergedFields, conflictingFields} = computeFieldLevelMerge(localRecord, remoteRecord);
-    const changedFields = mergedFields.filter(field => !["version","createdAt","updatedAt","createdBy","updatedBy","deviceId","syncVersion","lastSyncedAt","deletedAt","isDeleted","entity"].includes(field));
-    const hasConflicts = conflictingFields.filter(field => !["version","createdAt","updatedAt","createdBy","updatedBy","deviceId","syncVersion","lastSyncedAt","deletedAt","isDeleted","entity"].includes(field)).length > 0;
-    if(changedFields.length > 0 && !hasConflicts){
-      outcome = {
-        strategy: "field_merge",
-        resolvedRecord: ensureRecordMetadata({
-          ...merged,
-          id: localRecord.id || remoteRecord.id,
-          version: Math.max(Number(localRecord.version || 1), Number(remoteRecord.version || 1)) + 1,
-          updatedAt: new Date().toISOString(),
-          updatedBy: currentUser,
-          deviceId: getDeviceId(),
-          syncVersion: (Math.max(Number(localRecord.syncVersion || 1), Number(remoteRecord.syncVersion || 1)) + 1),
-          lastSyncedAt: new Date().toISOString(),
-          deletedAt: localRecord.deletedAt || remoteRecord.deletedAt || null,
-          isDeleted: Boolean(localRecord.isDeleted || remoteRecord.isDeleted)
-        }, entity),
-        confidence: 95,
-        mergeReason: "Different fields changed on separate devices",
-        mergedFields: changedFields,
-        conflictingFields: []
-      };
-    }
-  }else if(mergePolicy === "newest_wins"){
-    outcome = {
-      strategy: "newest_wins",
-      resolvedRecord: localTime >= remoteTime ? localRecord : remoteRecord,
-      confidence: 90,
-      mergeReason: "Newest record selected by policy",
-      mergedFields: [],
-      conflictingFields: []
-    };
-  }else if(mergePolicy === "remote_wins"){
-    outcome = {
-      strategy: "keep_remote",
-      resolvedRecord: remoteRecord,
-      confidence: 90,
-      mergeReason: "Remote record selected by policy",
-      mergedFields: [],
-      conflictingFields: []
-    };
-  }else if(mergePolicy === "local_wins"){
-    outcome = {
-      strategy: "keep_local",
-      resolvedRecord: localRecord,
-      confidence: 90,
-      mergeReason: "Local record selected by policy",
-      mergedFields: [],
-      conflictingFields: []
-    };
-  }else if(mergePolicy === "administrator_review"){
-    outcome = {
-      strategy: "administrator_review",
-      resolvedRecord: localRecord,
-      confidence: 50,
-      mergeReason: "Administrator review required by policy",
-      mergedFields: [],
-      conflictingFields: []
-    };
-  }
-
-  return outcome;
-}
-
-function applyResolvedConflict(conflict, decision){
-  const ward = getWard();
-  const entity = conflict.entity;
-  const localRecord = conflict.localRecord || {};
-  const remoteRecord = conflict.remoteRecord || {};
-  const strategy = decision && decision.strategy ? decision.strategy : "newest_wins";
-  const policy = conflict.policy || getConflictPolicy(entity);
-  let resolvedRecord = localRecord;
-  let mergeOutcome = null;
-
-  if(policy === "field_merge" || policy === "field_level_merge"){
-    mergeOutcome = applyAutomaticMerge(conflict, policy);
-    resolvedRecord = mergeOutcome.resolvedRecord;
-  }else if(strategy === "keep_remote"){
-    resolvedRecord = remoteRecord;
-  }else if(strategy === "keep_local"){
-    resolvedRecord = localRecord;
-  }else if(strategy === "newest_wins"){
-    const localTime = new Date(localRecord.updatedAt || localRecord.updated_at || 0).getTime();
-    const remoteTime = new Date(remoteRecord.updatedAt || remoteRecord.updated_at || 0).getTime();
-    resolvedRecord = localTime >= remoteTime ? localRecord : remoteRecord;
-  }
-
-  resolvedRecord = ensureRecordMetadata({
-    ...resolvedRecord,
-    version: (Number(resolvedRecord.version || 1) + 1),
-    updatedBy: currentUser,
-    updatedAt: new Date().toISOString(),
-    deviceId: getDeviceId(),
-    syncVersion: (Number(resolvedRecord.syncVersion || 1) + 1),
-    lastSyncedAt: new Date().toISOString()
-  }, entity);
-
-  if(entity === "member"){
-    const unitNum = resolvedRecord.unitNum || resolvedRecord.pollingUnit || resolvedRecord.polling_unit_id || "GEN";
-    if(!ward.voters[unitNum]) ward.voters[unitNum] = [];
-    const existing = findEntityRecord(entity, resolvedRecord);
-    if(existing){
-      ward.voters[existing.unitNum][existing.index] = resolvedRecord;
-    } else {
-      ward.voters[unitNum].push(resolvedRecord);
-    }
-  }else if(entity === "street"){
-    const existing = findEntityRecord(entity, resolvedRecord);
-    if(existing){ ward.wardStreets[existing.index] = resolvedRecord; }
-    else { ward.wardStreets.push(resolvedRecord); }
-  }else if(entity === "executive"){
-    const existing = findEntityRecord(entity, resolvedRecord);
-    if(existing){ ward.excos[existing.index] = resolvedRecord; }
-    else { ward.excos.push(resolvedRecord); }
-  }else if(entity === "meeting"){
-    const existing = findEntityRecord(entity, resolvedRecord);
-    if(existing){ ward.meetings[existing.index] = resolvedRecord; }
-    else { ward.meetings.push(resolvedRecord); }
-  }else if(entity === "campaign"){
-    const existing = findEntityRecord(entity, resolvedRecord);
-    if(existing){ ward.campaigns[existing.index] = resolvedRecord; }
-    else { ward.campaigns.push(resolvedRecord); }
-  }else if(entity === "attendance-session"){
-    const existing = findEntityRecord(entity, resolvedRecord);
-    if(existing){ ward.attendanceSessions[existing.index] = resolvedRecord; }
-    else { ward.attendanceSessions.push(resolvedRecord); }
-  }else if(entity === "ward"){
-    Object.assign(ward, resolvedRecord);
-  }
-
-  save(true, true);
-
-  if(mergeOutcome){
-    recordMergeHistory({
-      entity,
-      entityId: resolvedRecord.id || conflict.entityId,
-      conflictId: conflict.id,
-      mergePolicy: mergeOutcome.strategy,
-      confidence: mergeOutcome.confidence,
-      mergeReason: mergeOutcome.mergeReason,
-      mergedFields: mergeOutcome.mergedFields || [],
-      conflictingFields: mergeOutcome.conflictingFields || [],
-      deviceIds: [localRecord.deviceId || getDeviceId(), remoteRecord.deviceId || getDeviceId()].filter(Boolean),
-      administrator: currentUser,
-      status: "merged"
-    });
-  }
-
-  return resolvedRecord;
-}
-
-function queueMergeReplay(conflict, decision){
-  const replayQueue = loadMergeReplayQueue();
-  const conflictId = conflict && conflict.id;
-  const existing = replayQueue.find(item => item.conflictId === conflictId && ["pending", "replayed"].includes(item.status));
-  const dedupedQueue = replayQueue.filter(item => !(item.conflictId === conflictId && ["pending", "replayed"].includes(item.status)));
-
-  if(existing){
-    const updatedEntry = {
-      ...existing,
-      decision,
-      updatedAt: new Date().toISOString(),
-      status: "pending"
-    };
-    dedupedQueue.push(updatedEntry);
-    mergeReplayQueueCache = dedupedQueue;
-    saveMergeReplayQueue();
-    return mergeReplayQueueCache;
-  }
-
-  dedupedQueue.push({
-    id: makeId("MR"),
-    conflictId,
-    entity: conflict.entity,
-    entityId: conflict.entityId,
-    decision,
-    createdAt: new Date().toISOString(),
-    status: "pending"
-  });
-  mergeReplayQueueCache = dedupedQueue;
-  saveMergeReplayQueue();
-  return mergeReplayQueueCache;
-}
-
-function replayPendingMerges(){
-  const replayQueue = loadMergeReplayQueue().filter(item => item.status === "pending");
-  replayQueue.forEach(item => {
-    const conflict = loadConflictQueue().find(entry => entry.id === item.conflictId);
-    if(conflict){
-      applyResolvedConflict(conflict, item.decision || {strategy: "keep_local"});
-      item.status = "replayed";
-      item.replayedAt = new Date().toISOString();
-    }
-  });
-  mergeReplayQueueCache = loadMergeReplayQueue().map(item => replayQueue.find(entry => entry.id === item.id) || item);
-  saveMergeReplayQueue();
-  return mergeReplayQueueCache;
-}
-
-function applyConflictReviewAction(conflictId, action, reason = null){
-  const conflict = loadConflictQueue().find(item => item.id === conflictId);
-  if(!conflict) return null;
-
-  if(!isAdministratorRole() && action !== "request_review"){
-    toast("Access denied", "Only administrators can resolve or approve conflicts.", "warning");
-    return null;
-  }
-
-  const previousStatus = conflict.reviewStatus || conflict.status || "pending_review";
-  const actionTaken = action;
-  const now = new Date().toISOString();
-
-  if(action === "request_review"){
-    conflict.status = "pending_review";
-    conflict.reviewStatus = "pending_review";
-    conflict.updatedAt = now;
-    conflict.reviewRequestedBy = currentUser;
-    conflict.syncState = conflict.syncState || "queued";
-    saveConflictQueue();
-    save(true, true);
-    recordConflictAudit({
-      entity: conflict.entity,
-      recordId: conflict.entityId,
-      conflictId: conflict.id,
-      actionTaken,
-      previousVersion: conflict.localVersion,
-      newVersion: conflict.remoteVersion,
-      policyApplied: conflict.mergePolicy || conflict.policy || "manual_review",
-      reason,
-      detail: "User requested administrator review for this conflict."
-    });
-    toast("Review requested", "The conflict has been moved to administrator review.", "info");
-    renderConflicts();
-    return conflict;
-  }
-
-  if(action === "assign_later"){
-    conflict.status = "assigned";
-    conflict.reviewStatus = "assigned";
-    conflict.assignedTo = conflict.assignedTo || currentUser;
-    conflict.reviewedAt = now;
-    conflict.reviewedBy = currentUser;
-    conflict.reviewReason = reason || "Assigned for later review.";
-    conflict.syncState = conflict.syncState || "queued";
-    saveConflictQueue();
-    save(true, true);
-    recordConflictAudit({
-      entity: conflict.entity,
-      recordId: conflict.entityId,
-      conflictId: conflict.id,
-      actionTaken,
-      previousVersion: conflict.localVersion,
-      newVersion: conflict.remoteVersion,
-      policyApplied: conflict.mergePolicy || conflict.policy || "manual_review",
-      reason,
-      detail: "Conflict assigned for later review."
-    });
-    toast("Conflict assigned", "The conflict is marked for later review.", "info");
-    renderConflicts();
-    return conflict;
-  }
-
-  if(action === "mark_for_admin_review"){
-    conflict.status = "pending_review";
-    conflict.reviewStatus = "pending_review";
-    conflict.reviewedAt = now;
-    conflict.reviewedBy = currentUser;
-    conflict.reviewReason = reason || "Marked for administrator review.";
-    conflict.syncState = conflict.syncState || "queued";
-    saveConflictQueue();
-    save(true, true);
-    recordConflictAudit({
-      entity: conflict.entity,
-      recordId: conflict.entityId,
-      conflictId: conflict.id,
-      actionTaken,
-      previousVersion: conflict.localVersion,
-      newVersion: conflict.remoteVersion,
-      policyApplied: conflict.mergePolicy || conflict.policy || "manual_review",
-      reason,
-      detail: "Conflict marked for administrator review."
-    });
-    toast("Conflict queued for review", "The conflict is now waiting for administrator review.", "info");
-    renderConflicts();
-    return conflict;
-  }
-
-  if(action === "keep_local" || action === "keep_remote"){
-    const resolvedRecord = applyResolvedConflict(conflict, {strategy: action === "keep_local" ? "keep_local" : "keep_remote"});
-    conflict.status = "resolved";
-    conflict.reviewStatus = "resolved";
-    conflict.resolvedAt = now;
-    conflict.resolvedBy = currentUser;
-    conflict.resolution = {strategy: action === "keep_local" ? "keep_local" : "keep_remote"};
-    conflict.resolvedRecord = resolvedRecord;
-    conflict.reviewReason = reason || `${action === "keep_local" ? "Keep local" : "Keep remote"} selected by administrator.`;
-    conflict.syncState = "resolved";
-    saveConflictQueue();
-    save(true, true);
-    queueMergeReplay(conflict, {strategy: action === "keep_local" ? "keep_local" : "keep_remote"});
-    recordConflictAudit({
-      entity: conflict.entity,
-      recordId: conflict.entityId,
-      conflictId: conflict.id,
-      actionTaken,
-      administrator: currentUser,
-      previousVersion: conflict.localVersion,
-      newVersion: resolvedRecord && resolvedRecord.version ? resolvedRecord.version : conflict.remoteVersion,
-      policyApplied: conflict.mergePolicy || conflict.policy || "manual_review",
-      reason,
-      detail: `${action === "keep_local" ? "Kept local version" : "Kept remote version"}.`
-    });
-    toast("Conflict resolved", "The selected review action has been applied.", "success");
-    renderConflicts();
-    return conflict;
-  }
-
-  if(action === "reject"){
-    conflict.status = "rejected";
-    conflict.reviewStatus = "rejected";
-    conflict.reviewedAt = now;
-    conflict.reviewedBy = currentUser;
-    conflict.reviewReason = reason || "Administrator rejected the conflict action.";
-    conflict.syncState = "rejected";
-    saveConflictQueue();
-    save(true, true);
-    recordConflictAudit({
-      entity: conflict.entity,
-      recordId: conflict.entityId,
-      conflictId: conflict.id,
-      actionTaken,
-      previousVersion: conflict.localVersion,
-      newVersion: conflict.remoteVersion,
-      policyApplied: conflict.mergePolicy || conflict.policy || "manual_review",
-      reason,
-      detail: "Administrator rejected this review action."
-    });
-    toast("Conflict rejected", "The conflict review was rejected.", "warning");
-    renderConflicts();
-    return conflict;
-  }
-
-  conflict.status = previousStatus;
-  saveConflictQueue();
-  return conflict;
-}
-
-function resolveConflict(conflictId, decision){
-  const conflict = loadConflictQueue().find(item => item.id === conflictId);
-  if(!conflict) return;
-  const policy = conflict.policy || getConflictPolicy(conflict.entity);
-
-  if(policy === "administrator_approval" && !isAdministratorRole() && !decision.adminApproved){
-    conflict.status = "pending_admin_approval";
-    conflict.pendingStrategy = decision.strategy || "newest_wins";
-    conflict.updatedAt = new Date().toISOString();
-    saveConflictQueue();
-    recordConflictAudit({
-      entity: conflict.entity,
-      recordId: conflict.entityId,
-      conflictId: conflict.id,
-      actionTaken: "request_review",
-      previousVersion: conflict.localVersion,
-      newVersion: conflict.remoteVersion,
-      policyApplied: policy,
-      reason: decision.reason || null,
-      detail: "Administrator approval is required before applying this conflict resolution."
-    });
-    toast("Admin approval pending", "An administrator must approve this conflict resolution before it is applied.", "warning");
-    renderConflicts();
-    return;
-  }
-
-  return applyConflictReviewAction(conflictId, decision && decision.strategy === "keep_remote" ? "keep_remote" : (decision && decision.strategy === "keep_local" ? "keep_local" : "mark_for_admin_review"), decision && decision.reason ? decision.reason : null);
-}
 
 function titleCase(value){
   return String(value || "")
@@ -1585,12 +357,6 @@ function initDB(){
   if (!db || typeof db !== "object") {
       db = {};
   }
-
-  Object.keys(db).forEach(wardName => {
-    if(db[wardName] && typeof db[wardName] === "object") {
-      db[wardName] = normalizeWardData(db[wardName]);
-    }
-  });
   const AIGBAKA_EXCOS = [
     { pos:"Chairman", name:"MR ADETUTU SAHEED", phone:"08089811373" },
     { pos:"Vice Chairman", name:"MR TAJUDEEN BAKARE", phone:"08020756768" },
@@ -1756,7 +522,7 @@ async function initializeDatabase() {
     }
 
     if(!isApiAvailable()){
-        toast("Cloud sync unavailable", "api.js did not load — cannot upload to the database right now.", "danger");
+        toast("Cloud sync unavailable", "api.js did not load â€” cannot upload to the database right now.", "danger");
         return;
     }
 
@@ -1772,13 +538,13 @@ async function initializeDatabase() {
 
             await window.API.saveWard(ward, db[ward]);
 
-            console.log("✅", ward);
+            console.log("âœ…", ward);
 
             success++;
 
         } catch (err) {
 
-            console.error("❌ Failed:", ward, err);
+            console.error("âŒ Failed:", ward, err);
 
         }
 
@@ -1802,14 +568,14 @@ async function save(sync = true, enqueueWardSync = true){
     if(!sync || !USE_SUPABASE || !enqueueWardSync || !FEATURE_FLAGS.recordSync) return;
 
     // Queue the change instead of pushing it directly. PWMS stores one JSON document per
-    // ward via API.saveWard(ward, wardData) — there is no per-member/per-record endpoint —
+    // ward via API.saveWard(ward, wardData) â€” there is no per-member/per-record endpoint â€”
     // so every change to this ward (a member, an attendance mark, a street, a unit, an
     // exco...) collapses into a single durable "sync this ward" operation. Queuing it here,
     // in the one function every save already goes through, means every offline edit
     // anywhere in the app is covered without touching those individual features.
     enqueue("upsert", "ward", currentWard);
 
-    if(isOnline) syncQueue(); // fire-and-forget — never blocks the UI or the caller.
+    if(isOnline) syncQueue(); // fire-and-forget â€” never blocks the UI or the caller.
 
 }
 
@@ -1893,7 +659,7 @@ async function sendOrQueueRecordOperation(method, apiPath, entity, entityId, pay
 
 async function loadDatabase() {
 
-    // 1. Load Local Database immediately — the app never waits on the network to open.
+    // 1. Load Local Database immediately â€” the app never waits on the network to open.
     db = {};
     WARD_LIST.forEach(w => {
         db[w] = {};
@@ -1903,7 +669,7 @@ async function loadDatabase() {
         const local = JSON.parse(localStorage.getItem(DATA_KEY) || "{}");
         Object.assign(db, local);
     } catch (err) {
-        // Corrupt local data must never crash the app — fall back to a clean structure and repair below.
+        // Corrupt local data must never crash the app â€” fall back to a clean structure and repair below.
         console.warn("[OFFLINE] Local database was unreadable, starting from a clean structure.", err);
     }
 
@@ -1923,12 +689,12 @@ async function loadDatabase() {
 async function refreshFromRemote(){
     if(!USE_SUPABASE) return;
     if(!isApiAvailable()){
-        console.warn("[OFFLINE] Skipping remote refresh — api.js is not available.");
+        console.warn("[OFFLINE] Skipping remote refresh â€” api.js is not available.");
         return;
     }
     try{
         if(getPending().some(op => op.ward === currentWard || op.wardName === currentWard)){
-            console.log("[SYNC] Skipping remote refresh — local changes pending for", currentWard);
+            console.log("[SYNC] Skipping remote refresh â€” local changes pending for", currentWard);
             return;
         }
 
@@ -1961,8 +727,8 @@ function refreshCurrentUI(){
 /*
  * Lifecycle:
  *   1. Every save() enqueues an "upsert ward" operation (see save() above) and persists
- *      it to localStorage immediately — the queue survives refresh, restart, and crashes.
- *   2. syncQueue() drains the queue sequentially (never concurrently — guarded by
+ *      it to localStorage immediately â€” the queue survives refresh, restart, and crashes.
+ *   2. syncQueue() drains the queue sequentially (never concurrently â€” guarded by
  *      syncInProgress) whenever: the app starts, connectivity returns, every 60s while
  *      online, or the user clicks "Sync Now".
  *   3. Each operation is pushed via syncOperation(), which stamps the ward document with
@@ -2356,9 +1122,9 @@ function updateSyncIndicator(){
   const el = document.getElementById("syncStatusBadge");
   if(!el) return;
   const s = syncStatus();
-  if(s.syncInProgress) el.textContent = "🔄 Syncing…";
-  else if(s.syncQueueLength > 0) el.textContent = `⏳ ${s.syncQueueLength} pending`;
-  else el.textContent = "✅ Synced";
+  if(s.syncInProgress) el.textContent = "ðŸ”„ Syncingâ€¦";
+  else if(s.syncQueueLength > 0) el.textContent = `â³ ${s.syncQueueLength} pending`;
+  else el.textContent = "âœ… Synced";
 }
 
 function dispatchSyncEvent(name, detail = {}){
@@ -2368,47 +1134,10 @@ function dispatchSyncEvent(name, detail = {}){
 async function syncOperation(op){
   if(op.apiPath){
     if(!isApiAvailable()){
-      throw new Error("[OFFLINE] Cannot sync — api.js is not available.");
+      throw new Error("[OFFLINE] Cannot sync â€” api.js is not available.");
     }
     if(op.method === "POST" && op.apiPath !== "/wards"){
       await ensureRecordPayloadWardId(op.payload);
-    }
-    if((op.method === "PUT" || op.method === "DELETE") && op.payload && typeof op.payload.version !== "undefined"){
-      try{
-        const currentRemote = await v2Request(op.apiPath);
-        const currentVersion = Number(currentRemote && currentRemote.version ? currentRemote.version : 1);
-        const localVersion = Number(op.payload.version || 1);
-        if(currentVersion !== localVersion){
-          enqueueConflict({
-            entity: op.entity || "record",
-            entityId: op.entityId || op.payload.id || null,
-            operation: op.operation || op.method,
-            localRecord: op.payload,
-            remoteRecord: currentRemote,
-            localVersion,
-            remoteVersion: currentVersion,
-            policy: getConflictPolicy(op.entity || "record"),
-            summary: "Record version mismatch detected before sync."
-          });
-          throw new Error("conflict: record version mismatch");
-        }
-      }catch(err){
-        if(String(err.message || err).startsWith("conflict")) throw err;
-        if(String(err.message || err).includes("NOT_FOUND")){
-          enqueueConflict({
-            entity: op.entity || "record",
-            entityId: op.entityId || op.payload.id || null,
-            operation: op.operation || op.method,
-            localRecord: op.payload,
-            remoteRecord: null,
-            localVersion: Number(op.payload.version || 1),
-            remoteVersion: 0,
-            policy: getConflictPolicy(op.entity || "record"),
-            summary: "Remote record not found during optimistic lock check."
-          });
-          throw new Error("conflict: remote record missing");
-        }
-      }
     }
     const options = {method: op.method, headers: {"Content-Type":"application/json"}};
     if(op.method !== "DELETE"){
@@ -2424,46 +1153,31 @@ async function syncOperation(op){
   }
 
   if(!isApiAvailable()){
-    throw new Error("[OFFLINE] Cannot sync — api.js is not available.");
+    throw new Error("[OFFLINE] Cannot sync â€” api.js is not available.");
   }
 
   // Conflict detection: compare against the remote copy before overwriting it.
-  // Newest wins — a cloud copy newer than what we last synced is never overwritten.
+  // Newest wins â€” a cloud copy newer than what we last synced is never overwritten.
   try{
     const remote = await window.API.loadWard(op.ward);
     if(remote && remote.ok && remote.data && remote.data.updatedAt){
       const remoteTime = remote.data.updatedAt;
       const lastKnownRemoteTime = wardData.__lastSyncedRemoteUpdatedAt || 0;
       if(remoteTime > lastKnownRemoteTime && remoteTime > (wardData.updatedAt || 0)){
-        console.warn("[SYNC] Conflict detected for", op.ward, "— cloud copy is newer, not overwriting.");
-        enqueueConflict({
-          entity: "ward",
-          entityId: op.ward,
-          operation: op.operation || "upsert",
-          localRecord: wardData,
-          remoteRecord: remote.data,
-          localVersion: wardData.version || 1,
-          remoteVersion: remote.data.version || 1,
-          policy: getConflictPolicy("ward"),
-          summary: "Remote ward data is newer than local data."
-        });
+        console.warn("[SYNC] Conflict detected for", op.ward, "â€” cloud copy is newer, not overwriting.");
         dispatchSyncEvent("sync-error", {op, reason: "conflict"});
         throw new Error("conflict: remote data is newer than local");
       }
     }
   }catch(e){
     if(String(e.message || e).startsWith("conflict")) throw e;
-    // The conflict check itself failed (e.g. a network hiccup) — fall through and
+    // The conflict check itself failed (e.g. a network hiccup) â€” fall through and
     // still attempt the push rather than blocking sync indefinitely on a read error.
   }
 
-  wardData.updatedAt = new Date().toISOString();
+  wardData.updatedAt = Date.now();
   wardData.updatedBy = currentUser;
-  wardData.version = (Number(wardData.version || 0) + 1);
-  wardData.syncVersion = (Number(wardData.syncVersion || 0) + 1);
-  wardData.lastSyncedAt = new Date().toISOString();
-  wardData.deviceId = wardData.deviceId || getDeviceId();
-  wardData = normalizeWardData(wardData);
+  wardData.version = (wardData.version || 0) + 1;
 
   await window.API.saveWard(op.ward, wardData);
 
@@ -2516,7 +1230,7 @@ async function syncQueue(){
     return;
   }
   if(!isOnline){
-    console.log("[OFFLINE] Sync skipped — no connection.");
+    console.log("[OFFLINE] Sync skipped â€” no connection.");
     return;
   }
   if(!USE_SUPABASE) return;
@@ -2526,7 +1240,7 @@ async function syncQueue(){
   syncInProgress = true;
   updateSyncIndicator();
   dispatchSyncEvent("sync-start", {queueLength: getPending().length});
-  console.log("[SYNC] Starting sync run —", getPending().length, "pending operation(s)");
+  console.log("[SYNC] Starting sync run â€”", getPending().length, "pending operation(s)");
 
   try{
     let processed = true;
@@ -2556,7 +1270,7 @@ async function syncQueue(){
 }
 
 async function syncAll(){
-  // Kept as a named alias for parity with the sync-engine spec — identical to syncQueue().
+  // Kept as a named alias for parity with the sync-engine spec â€” identical to syncQueue().
   return syncQueue();
 }
 
@@ -2570,7 +1284,7 @@ window.clearQueue = clear;
 window.pendingQueue = getPending;
 
 /* =========================
-   DATA ACCESS REPOSITORY LAYER  (Sprint 3 — compatibility layer)
+   DATA ACCESS REPOSITORY LAYER  (Sprint 3 â€” compatibility layer)
    ========================= */
 /*
  * Per-entity intent: existing UI code (showMemberForm, showStreetForm,
@@ -2614,7 +1328,7 @@ const FEATURE_FLAGS = {
   }
 };
 
-// Shared v2 HTTP helper — unwraps Sprint 2's standardized {success,data,error} envelope.
+// Shared v2 HTTP helper â€” unwraps Sprint 2's standardized {success,data,error} envelope.
 async function v2Request(path, options = {}){
   const response = await fetch(`${BACKEND_URL}/api/v2${path}`, {
     headers: {"Content-Type": "application/json"},
@@ -2640,33 +1354,31 @@ const MemberRepository = {
     }
 
     const ward = getWard();
-    const existingRecord = previous && previous.unitNum ? null : allMembers().find(m => m.id === newData.id || m.qrId === newData.id || m.membershipNumber === newData.id || m.qrId === newData.qrId || m.id === newData.qrId);
-    const safeData = prepareEntityRecordForPersist("member", newData, existingRecord);
     if(!ward.voters[unitNum]) ward.voters[unitNum] = [];
 
     if(previous && previous.unitNum){
       ward.voters[previous.unitNum].splice(previous.index, 1);
     }
-    ward.voters[unitNum].push(safeData);
+    ward.voters[unitNum].push(newData);
 
-    if(safeData.street && !ward.wardStreets.some(s => s.name.toLowerCase() === safeData.street.toLowerCase())){
-      ward.wardStreets.push({name:safeData.street});
+    if(newData.street && !ward.wardStreets.some(s => s.name.toLowerCase() === newData.street.toLowerCase())){
+      ward.wardStreets.push({name:newData.street});
     }
 
     if(FEATURE_FLAGS.recordSync.members){
       await save(true, false);
       await sendOrQueueRecordOperation(
         previous ? "PUT" : "POST",
-        previous ? `/members/${safeData.id}` : `/members`,
+        previous ? `/members/${newData.id}` : `/members`,
         "member",
-        safeData.id,
-        safeData
+        newData.id,
+        newData
       );
-      return safeData;
+      return newData;
     }
 
     await save();
-    return safeData;
+    return newData;
   },
 
   async remove(unitNum, index, existing){
@@ -2713,24 +1425,23 @@ const StreetRepository = {
     }
 
     const ward = getWard();
-    const safeData = prepareEntityRecordForPersist("street", data, index !== null ? ward.wardStreets[index] : null);
-    if(index !== null) ward.wardStreets[index] = safeData;
-    else ward.wardStreets.push(safeData);
+    if(index !== null) ward.wardStreets[index] = data;
+    else ward.wardStreets.push(data);
 
     if(FEATURE_FLAGS.recordSync.streets){
       await save(true, false);
       await sendOrQueueRecordOperation(
         index !== null ? "PUT" : "POST",
-        index !== null ? `/streets/${safeData.id}` : `/streets`,
+        index !== null ? `/streets/${data.id}` : `/streets`,
         "street",
-        safeData.id,
-        safeData
+        data.id,
+        data
       );
-      return safeData;
+      return data;
     }
 
     await save();
-    return safeData;
+    return data;
   }
 };
 
@@ -2746,24 +1457,23 @@ const ExecutiveRepository = {
     }
 
     const ward = getWard();
-    const safeData = prepareEntityRecordForPersist("executive", data, index !== null ? ward.excos[index] : null);
-    if(index !== null) ward.excos[index] = safeData;
-    else ward.excos.push(safeData);
+    if(index !== null) ward.excos[index] = data;
+    else ward.excos.push(data);
 
     if(FEATURE_FLAGS.recordSync.executives){
       await save(true, false);
       await sendOrQueueRecordOperation(
         index !== null ? "PUT" : "POST",
-        index !== null ? `/executives/${safeData.id}` : `/executives`,
+        index !== null ? `/executives/${data.id}` : `/executives`,
         "executive",
-        safeData.id,
-        safeData
+        data.id,
+        data
       );
-      return safeData;
+      return data;
     }
 
     await save();
-    return safeData;
+    return data;
   },
 
   async remove(index, existing){
@@ -2802,24 +1512,23 @@ const MeetingRepository = {
     }
 
     const ward = getWard();
-    const safeData = prepareEntityRecordForPersist("meeting", data, index !== null ? ward.meetings[index] : null);
-    if(index !== null) ward.meetings[index] = safeData;
-    else ward.meetings.push(safeData);
+    if(index !== null) ward.meetings[index] = data;
+    else ward.meetings.push(data);
 
     if(FEATURE_FLAGS.recordSync.meetings){
       await save(true, false);
       await sendOrQueueRecordOperation(
         index !== null ? "PUT" : "POST",
-        index !== null ? `/meetings/${safeData.id}` : `/meetings`,
+        index !== null ? `/meetings/${data.id}` : `/meetings`,
         "meeting",
-        safeData.id,
-        safeData
+        data.id,
+        data
       );
-      return safeData;
+      return data;
     }
 
     await save();
-    return safeData;
+    return data;
   }
 };
 
@@ -2835,24 +1544,23 @@ const CampaignRepository = {
     }
 
     const ward = getWard();
-    const safeData = prepareEntityRecordForPersist("campaign", data, index !== null ? ward.campaigns[index] : null);
-    if(index !== null) ward.campaigns[index] = safeData;
-    else ward.campaigns.push(safeData);
+    if(index !== null) ward.campaigns[index] = data;
+    else ward.campaigns.push(data);
 
     if(FEATURE_FLAGS.recordSync.campaigns){
       await save(true, false);
       await sendOrQueueRecordOperation(
         index !== null ? "PUT" : "POST",
-        index !== null ? `/campaigns/${safeData.id}` : `/campaigns`,
+        index !== null ? `/campaigns/${data.id}` : `/campaigns`,
         "campaign",
-        safeData.id,
-        safeData
+        data.id,
+        data
       );
-      return safeData;
+      return data;
     }
 
     await save();
-    return safeData;
+    return data;
   }
 };
 
@@ -2937,7 +1645,7 @@ const AttendanceRepository = {
 };
 
 /* -----------------------------------------------------------------
-   Named entity entry points — the actual functions UI code calls.
+   Named entity entry points â€” the actual functions UI code calls.
    Each just delegates to its repository; kept as separate named
    functions (rather than calling MemberRepository.save() directly
    from the UI) so the call sites read as createMember()/updateMember()
@@ -2956,7 +1664,7 @@ function confirmDeleteMember(id){
   confirmModal("Delete Member", `Delete ${escapeHtml(member.name || "this member")}? This cannot be undone.`, () => {
     deleteMember(member.unitNum, member.index, member);
     renderMembers();
-    toast("Member deleted", `${escapeHtml(member.name || "Member")} has been removed.`, "success");
+    toast("Member deleted", `${escapeHtml(member.name || "Member")} has been removed.", "success");
   });
 }
 
@@ -3084,7 +1792,7 @@ function showPage(id){
   const navBtn = document.getElementById("nav-" + id);
   if(navBtn) navBtn.classList.add("active");
 
-  const meta = MODULES.find(m => m.id === id) || {label:"Page", icon:"📌", subtitle:""};
+  const meta = MODULES.find(m => m.id === id) || {label:"Page", icon:"ðŸ“Œ", subtitle:""};
   document.getElementById("currentPageTitle").textContent = meta.label;
   document.getElementById("currentPageSubtitle").textContent = meta.subtitle;
   document.getElementById("currentPageIcon").textContent = meta.icon;
@@ -3106,7 +1814,6 @@ function renderPage(id){
     campaigns: renderCampaigns,
     communications: renderCommunications,
     reports: renderReports,
-    conflicts: renderConflicts,
     settings: renderSettings,
     security: renderSecurity,
     backup: renderBackup,
@@ -3291,15 +1998,13 @@ function renderDashboard(){
   const members = allMembers();
   const recentLogs = JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]").slice(0,6);
   const sessions = (getWard().attendanceSessions || []).slice().reverse().slice(0,5);
-  const mergeHistory = loadMergeHistory().slice(0,4);
-  const replayQueue = loadMergeReplayQueue();
 
   document.getElementById("dashboard").innerHTML = `
     <div class="grid grid-4">
-      ${kpiCard("Total Members", stats.totalMembers, "👥")}
-      ${kpiCard("Today's Attendance", stats.todayAttendance, "✅")}
-      ${kpiCard("Polling Units", stats.totalUnits, "🏛️")}
-      ${kpiCard("Ward Streets", stats.totalStreets, "🛣️")}
+      ${kpiCard("Total Members", stats.totalMembers, "ðŸ‘¥")}
+      ${kpiCard("Today's Attendance", stats.todayAttendance, "âœ…")}
+      ${kpiCard("Polling Units", stats.totalUnits, "ðŸ›ï¸")}
+      ${kpiCard("Ward Streets", stats.totalStreets, "ðŸ›£ï¸")}
     </div>
 
     <div style="height:16px"></div>
@@ -3345,10 +2050,10 @@ function renderDashboard(){
       <div class="card">
         <h3 class="card-title">Sync Status</h3>
         <div class="grid grid-2" style="gap:12px">
-          ${dashboardStat("Pending", syncStats.pending, "⏳")}
-          ${dashboardStat("Queued", syncStats.totalQueued, "📥")}
-          ${dashboardStat("Succeeded", syncStats.totalSucceeded, "✅")}
-          ${dashboardStat("Failed", syncStats.totalFailed, "❌")}
+          ${dashboardStat("Pending", syncStats.pending, "â³")}
+          ${dashboardStat("Queued", syncStats.totalQueued, "ðŸ“¥")}
+          ${dashboardStat("Succeeded", syncStats.totalSucceeded, "âœ…")}
+          ${dashboardStat("Failed", syncStats.totalFailed, "âŒ")}
         </div>
         <div style="margin-top:12px">
           <div class="muted">Last sync: ${syncStats.lastSync ? escapeHtml(new Date(syncStats.lastSync).toLocaleString()) : "Never"}</div>
@@ -3358,27 +2063,11 @@ function renderDashboard(){
         <button class="btn btn-outline btn-sm" onclick="syncQueue()">Force Sync</button>
       </div>
       <div class="card">
-        <h3 class="card-title">Merge Engine</h3>
-        <div class="grid grid-2" style="gap:10px">
-          ${dashboardStat("Auto Merges", mergeHistory.length, "⚙️")}
-          ${dashboardStat("Replay Queue", replayQueue.length, "🔁")}
-        </div>
-        <div style="margin-top:10px">
-          <div class="muted">Recent merges:</div>
-          ${emptyOrList(mergeHistory, entry => `
-            <div class="timeline-item">
-              <strong>${escapeHtml(entry.entity || "record")}</strong>
-              <div class="muted">${escapeHtml(entry.mergePolicy || "manual_review")} · ${escapeHtml(String(entry.confidence || 0))}%</div>
-            </div>
-          `)}
-        </div>
-      </div>
-      <div class="card">
         <h3 class="card-title">Upcoming Meetings</h3>
         ${emptyOrList(getWard().meetings.filter(m => m.status !== "Closed").slice(0,5), m => `
           <div class="timeline-item">
             <strong>${escapeHtml(m.title)}</strong>
-            <div class="muted">${escapeHtml(m.date || "No date")} · ${escapeHtml(m.venue || "No venue")}</div>
+            <div class="muted">${escapeHtml(m.date || "No date")} Â· ${escapeHtml(m.venue || "No venue")}</div>
           </div>
         `)}
       </div>
@@ -3396,7 +2085,7 @@ function renderDashboard(){
       <div class="card">
         <h3 class="card-title">Weather Widget</h3>
         <div style="display:flex;align-items:center;gap:14px">
-          <div class="kpi-icon">☀️</div>
+          <div class="kpi-icon">â˜€ï¸</div>
           <div>
             <strong>Ejigbo Area</strong>
             <div class="muted">Weather integration placeholder</div>
@@ -3770,7 +2459,7 @@ function openMemberProfile(id){
   document.getElementById("member-profile").classList.add("active");
   document.getElementById("currentPageTitle").textContent = "Member Profile";
   document.getElementById("currentPageSubtitle").textContent = m.name || "Member record";
-  document.getElementById("currentPageIcon").textContent = "👤";
+  document.getElementById("currentPageIcon").textContent = "ðŸ‘¤";
 
   document.getElementById("member-profile").innerHTML = `
     <div class="profile">
@@ -3826,7 +2515,7 @@ function openMemberProfile(id){
 }
 
 function info(label,value){
-  return `<div><div class="kpi-label">${escapeHtml(label)}</div><strong>${escapeHtml(value || "—")}</strong></div>`;
+  return `<div><div class="kpi-label">${escapeHtml(label)}</div><strong>${escapeHtml(value || "â€”")}</strong></div>`;
 }
 
 
@@ -4108,10 +2797,10 @@ function renderAttendance(){
 
   document.getElementById("attendance").innerHTML = `
     <div class="grid grid-4">
-      ${kpiCard("Sessions", sessions.length, "📅")}
-      ${kpiCard("Returning", sessions.reduce((n,s)=>n+(s.returning || []).length,0), "👥")}
-      ${kpiCard("New Members", sessions.reduce((n,s)=>n+(s.newMembers || []).length,0), "✨")}
-      ${kpiCard("Active", active ? "Yes" : "No", "✅")}
+      ${kpiCard("Sessions", sessions.length, "ðŸ“…")}
+      ${kpiCard("Returning", sessions.reduce((n,s)=>n+(s.returning || []).length,0), "ðŸ‘¥")}
+      ${kpiCard("New Members", sessions.reduce((n,s)=>n+(s.newMembers || []).length,0), "âœ¨")}
+      ${kpiCard("Active", active ? "Yes" : "No", "âœ…")}
     </div>
 
     <div style="height:16px"></div>
@@ -4146,7 +2835,7 @@ function sessionCard(session){
       <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
           <h3 style="margin:0">${escapeHtml(session.title)}</h3>
-          <p class="muted" style="margin:4px 0">${escapeHtml(session.date || "")} · ${escapeHtml(session.venue || "No venue")}</p>
+          <p class="muted" style="margin:4px 0">${escapeHtml(session.date || "")} Â· ${escapeHtml(session.venue || "No venue")}</p>
         </div>
         <span class="badge ${session.status === "active" ? "badge-success" : "badge-danger"}">${escapeHtml(session.status || "closed")}</span>
       </div>
@@ -4280,7 +2969,7 @@ function autoMarkAttendance(member){
 
 function manualAttendance(){
   const members = allMembers();
-  const options = members.map(m => `<option value="${escapeHtml(m.id || m.qrId)}">${escapeHtml(m.name || "Unnamed")} · ${escapeHtml(m.phone || "")} · Unit ${escapeHtml(m.unitNum)}</option>`).join("");
+  const options = members.map(m => `<option value="${escapeHtml(m.id || m.qrId)}">${escapeHtml(m.name || "Unnamed")} Â· ${escapeHtml(m.phone || "")} Â· Unit ${escapeHtml(m.unitNum)}</option>`).join("");
 
   const body = `
     <label class="label">Select Member</label>
@@ -4629,7 +3318,7 @@ function smsPagesForLength(length){
 }
 
 function formatNGNCurrency(amount){
-  return `₦${Number(amount || 0).toFixed(2)}`;
+  return `â‚¦${Number(amount || 0).toFixed(2)}`;
 }
 
 function getCommunicationSelectionCounts(){
@@ -4775,7 +3464,7 @@ function renderCommunications(){
           <input type="checkbox" ${communicationSelectionState.selectedMembers.includes(m.id) ? "checked" : ""} onchange="toggleCommunicationMemberSelection('${escapeHtml(m.id)}')" />
           <span style="flex:1">
             <strong>${escapeHtml(m.name)}</strong><br>
-            <span class="muted" style="font-size:.78rem">${escapeHtml(m.phone || "No phone")}${m.unit ? ` · Unit ${escapeHtml(m.unit)}` : ""}</span>
+            <span class="muted" style="font-size:.78rem">${escapeHtml(m.phone || "No phone")}${m.unit ? ` Â· Unit ${escapeHtml(m.unit)}` : ""}</span>
           </span>
         </label>
       `).join("")
@@ -4787,7 +3476,7 @@ function renderCommunications(){
           <input type="checkbox" ${communicationSelectionState.selectedExecutives.includes(e.id) ? "checked" : ""} onchange="toggleCommunicationExecutiveSelection('${escapeHtml(e.id)}')" />
           <span style="flex:1">
             <strong>${escapeHtml(e.name)}</strong><br>
-            <span class="muted" style="font-size:.78rem">${escapeHtml(e.position || "Executive")}${e.phone ? ` · ${escapeHtml(e.phone)}` : ""}</span>
+            <span class="muted" style="font-size:.78rem">${escapeHtml(e.position || "Executive")}${e.phone ? ` Â· ${escapeHtml(e.phone)}` : ""}</span>
           </span>
         </label>
       `).join("")
@@ -4870,7 +3559,7 @@ function renderCommunications(){
       ${emptyOrList((getWard().communications || []).slice().reverse(), c => `
         <div class="timeline-item">
           <strong>${escapeHtml(c.channel)}</strong>
-          <div class="muted">${escapeHtml(c.message)} · ${new Date(c.at).toLocaleString()}</div>
+          <div class="muted">${escapeHtml(c.message)} Â· ${new Date(c.at).toLocaleString()}</div>
         </div>
       `)}
     </div>
@@ -4919,10 +3608,10 @@ function renderReports(){
   const stats = wardStats();
   document.getElementById("reports").innerHTML = `
     <div class="grid grid-4">
-      ${kpiCard("Members",stats.totalMembers,"👥")}
-      ${kpiCard("Attendance",stats.returning + stats.newMembers,"✅")}
-      ${kpiCard("Units",stats.totalUnits,"🏛️")}
-      ${kpiCard("Streets",stats.totalStreets,"🛣️")}
+      ${kpiCard("Members",stats.totalMembers,"ðŸ‘¥")}
+      ${kpiCard("Attendance",stats.returning + stats.newMembers,"âœ…")}
+      ${kpiCard("Units",stats.totalUnits,"ðŸ›ï¸")}
+      ${kpiCard("Streets",stats.totalStreets,"ðŸ›£ï¸")}
     </div>
 
     <div style="height:16px"></div>
@@ -4959,7 +3648,7 @@ function exportMembersCSV(){
 }
 
 /* =========================
-   MEMBER PDF EXPORT (new feature — does not replace CSV export)
+   MEMBER PDF EXPORT (new feature â€” does not replace CSV export)
    ========================= */
 
 const PDF_MEMBER_COLUMNS = [
@@ -5067,11 +3756,11 @@ function generateMembersPDF(){
   if(filterType === "unit"){
     const unitVal = document.getElementById("pdf_filter_unit").value;
     members = allMembers().filter(m => m.unitNum === unitVal);
-    scopeLabel = `${currentWard} Ward — Polling Unit ${unitVal}`;
+    scopeLabel = `${currentWard} Ward â€” Polling Unit ${unitVal}`;
   }else if(filterType === "street"){
     const streetVal = document.getElementById("pdf_filter_street").value;
     members = allMembers().filter(m => (m.street || "").toLowerCase() === streetVal.toLowerCase());
-    scopeLabel = `${currentWard} Ward — ${streetVal} Street`;
+    scopeLabel = `${currentWard} Ward â€” ${streetVal} Street`;
   }else if(filterType === "ward"){
     const wardVal = document.getElementById("pdf_filter_ward").value;
     members = allMembers(wardVal);
@@ -5081,7 +3770,7 @@ function generateMembersPDF(){
     members = caucusVal === "All"
       ? allMembers()
       : allMembers().filter(m => (m.apcCaucus || "Not Specified") === caucusVal);
-    scopeLabel = `${currentWard} Ward — ${caucusVal} Caucus`;
+    scopeLabel = `${currentWard} Ward â€” ${caucusVal} Caucus`;
   }else{
     members = allMembers();
   }
@@ -5279,7 +3968,7 @@ function renderSettings(){
         <option value="Custom" ${smsSettings.provider === "Custom" ? "selected" : ""}>Custom</option>
       </select>
       <div style="height:12px"></div>
-      <label class="label">Cost Per SMS Page (₦)</label>
+      <label class="label">Cost Per SMS Page (â‚¦)</label>
       <input id="sms_price" type="number" step="0.01" class="input" value="${smsSettings.pricePerSMS.toFixed(2)}" />
       <div style="height:12px"></div>
       <label class="label">Currency</label>
@@ -5520,144 +4209,6 @@ function renderNotifications(){
   `;
 }
 
-function renderConflicts(selectedConflictId = null){
-  const conflicts = listConflicts();
-  const pending = conflicts.filter(conflict => ["pending", "pending_admin_approval", "pending_review"].includes(conflict.status));
-  const assigned = conflicts.filter(conflict => conflict.reviewStatus === "assigned" || conflict.status === "assigned");
-  const resolved = conflicts.filter(conflict => conflict.status === "resolved" || conflict.reviewStatus === "resolved");
-  const adminReviews = conflicts.filter(conflict => ["pending_review", "assigned", "resolved"].includes(conflict.reviewStatus || conflict.status));
-  const auditEntries = loadConflictAudit();
-  const policies = loadConflictPolicies();
-  const selected = pending.find(conflict => conflict.id === selectedConflictId) || pending[0] || null;
-  const details = selected ? buildDifferenceSummary(selected.localRecord, selected.remoteRecord) : [];
-
-  document.getElementById("conflicts").innerHTML = `
-    <div class="grid grid-2">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-          <h3 class="card-title" style="margin:0">Conflict Dashboard</h3>
-          <span class="badge badge-warning">${pending.length} unresolved</span>
-        </div>
-        <div class="grid grid-2" style="gap:10px;margin-bottom:12px">
-          ${dashboardStat("Pending Reviews", pending.length, "⏳")}
-          ${dashboardStat("Assigned Reviews", assigned.length, "📝")}
-          ${dashboardStat("Resolved Reviews", resolved.length, "✅")}
-          ${dashboardStat("Admin Reviews", adminReviews.length, "🛡️")}
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Entity</th><th>Record</th><th>Type</th><th>Version</th><th>Timestamp</th><th>Status</th><th>Policy</th></tr></thead>
-            <tbody>
-              ${pending.length ? pending.map(conflict => `
-                <tr>
-                  <td>${escapeHtml(getEntityDisplayName(conflict.entity))}</td>
-                  <td>${escapeHtml(conflict.entityId || conflict.localRecord?.id || "—")}</td>
-                  <td>${escapeHtml(conflict.conflictType || "version_mismatch")}</td>
-                  <td>${escapeHtml(conflict.localVersion != null ? `${conflict.localVersion}/${conflict.remoteVersion ?? "?"}` : "—")}</td>
-                  <td>${escapeHtml(new Date(conflict.timestamp || conflict.createdAt || Date.now()).toLocaleString())}</td>
-                  <td>${escapeHtml(conflict.reviewStatus || conflict.status || "pending_review")}</td>
-                  <td>${escapeHtml(conflict.mergePolicy || conflict.policy || "manual_review")}</td>
-                </tr>
-              `).join("") : `<tr><td colspan="7">No unresolved conflicts.</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card">
-        <h3 class="card-title">Policy Configuration</h3>
-        <label class="label">Default Policy</label>
-        <select id="conflictPolicySelect" class="select" onchange="setConflictPolicy('default', this.value)">
-          ${["newest_wins","keep_local","keep_remote","manual_review","administrator_approval","field_level_merge"].map(option => `<option value="${option}" ${policies.default === option ? "selected" : ""}>${option.replace(/_/g, " ")}</option>`).join("")}
-        </select>
-        <div style="height:12px"></div>
-        <label class="label">Entity Policies</label>
-        <div class="grid">
-          ${Object.entries({member:"Member", street:"Street", executive:"Executive", meeting:"Meeting", campaign:"Campaign", "attendance-session":"Attendance Session"}).map(([entity,label]) => `
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-              <span>${escapeHtml(label)}</span>
-              <select class="select" style="max-width:160px" onchange="setConflictPolicy('${entity}', this.value)">
-                ${["newest_wins","keep_local","keep_remote","manual_review","administrator_approval","field_level_merge"].map(option => `<option value="${option}" ${policies[entity] === option ? "selected" : ""}>${option.replace(/_/g, " ")}</option>`).join("")}
-              </select>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-    </div>
-
-    <div style="height:16px"></div>
-
-    ${selected ? `
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
-          <div>
-            <h3 class="card-title" style="margin-bottom:6px">${escapeHtml(getEntityDisplayName(selected.entity))} Review</h3>
-            <p class="muted" style="margin:0">${escapeHtml(selected.summary || "Version mismatch detected during sync.")}</p>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-outline btn-sm" onclick="applyConflictReviewAction('${selected.id}', 'keep_local')">Keep Local</button>
-            <button class="btn btn-outline btn-sm" onclick="applyConflictReviewAction('${selected.id}', 'keep_remote')">Keep Remote</button>
-            <button class="btn btn-outline btn-sm" onclick="applyConflictReviewAction('${selected.id}', 'assign_later')">Assign Later</button>
-            <button class="btn btn-outline btn-sm" onclick="applyConflictReviewAction('${selected.id}', 'mark_for_admin_review')">Mark for Admin Review</button>
-            ${isAdministratorRole() ? `<button class="btn btn-outline btn-sm" onclick="applyConflictReviewAction('${selected.id}', 'reject')">Reject</button>` : ""}
-          </div>
-        </div>
-        <div style="height:12px"></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Field</th><th>Local</th><th>Remote</th></tr></thead>
-            <tbody>
-              ${details.length ? details.map(entry => `
-                <tr>
-                  <td>${escapeHtml(entry.field)}</td>
-                  <td>${escapeHtml(entry.local ?? "")}</td>
-                  <td>${escapeHtml(entry.remote ?? "")}</td>
-                </tr>
-              `).join("") : `<tr><td colspan="3">No field differences detected.</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    ` : `<div class="card"><p class="muted">No unresolved conflicts are currently pending.</p></div>`}
-
-    <div style="height:16px"></div>
-
-    <div class="grid grid-2">
-      <div class="card">
-        <h3 class="card-title">Administrator Review Status</h3>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Review</th><th>Count</th></tr></thead>
-            <tbody>
-              <tr><td>Pending</td><td>${pending.length}</td></tr>
-              <tr><td>Assigned</td><td>${assigned.length}</td></tr>
-              <tr><td>Resolved</td><td>${resolved.length}</td></tr>
-              <tr><td>Administrator Reviews</td><td>${adminReviews.length}</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card">
-        <h3 class="card-title">Audit History</h3>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Action</th><th>Administrator</th><th>Timestamp</th><th>Entity</th></tr></thead>
-            <tbody>
-              ${auditEntries.length ? auditEntries.map(entry => `
-                <tr>
-                  <td>${escapeHtml(entry.actionTaken || entry.action || "review")}</td>
-                  <td>${escapeHtml(entry.administrator || entry.user || "—")}</td>
-                  <td>${escapeHtml(new Date(entry.timestamp || Date.now()).toLocaleString())}</td>
-                  <td>${escapeHtml(getEntityDisplayName(entry.entity))}</td>
-                </tr>
-              `).join("") : `<tr><td colspan="4">No audit entries recorded yet.</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 /* =========================
    QR, PHONE, SEARCH, HELPERS
    ========================= */
@@ -5693,7 +4244,7 @@ function showQRCode(id){
       <div class="id-body">
         <div class="avatar" style="margin:0 auto 10px;width:82px;height:82px;font-size:1.4rem">${escapeHtml((member.name || "M").split(" ").map(x=>x[0]).join("").slice(0,2))}</div>
         <h3 style="margin:0">${escapeHtml(member.name)}</h3>
-        <div class="muted">${escapeHtml(currentWard)} Ward · Unit ${escapeHtml(member.unitNum)}</div>
+        <div class="muted">${escapeHtml(currentWard)} Ward Â· Unit ${escapeHtml(member.unitNum)}</div>
         <div class="muted">${escapeHtml(member.membershipNumber || member.id || "")}</div>
         <div class="qr-box"><div id="memberQr"></div></div>
       </div>
@@ -5761,7 +4312,7 @@ function runGlobalSearch(value){
       members.length
         ? `<div class="grid">${members.map(m=>`
             <button class="btn btn-outline" style="justify-content:flex-start" onclick="closeModal();openMemberProfile('${escapeHtml(m.id || m.qrId)}')">
-              ${escapeHtml(m.name || "Unnamed")} · ${escapeHtml(m.phone || "")} · Unit ${escapeHtml(m.unitNum)}
+              ${escapeHtml(m.name || "Unnamed")} Â· ${escapeHtml(m.phone || "")} Â· Unit ${escapeHtml(m.unitNum)}
             </button>
           `).join("")}</div>`
         : `<p class="muted">No matching member found.</p>`,
@@ -5853,9 +4404,7 @@ function unselectAllVoters(){
   setInterval(() => { if(isOnline) syncQueue(); }, 60 * 1000);
 
   // ...and a background remote refresh every 5 minutes while online (goal: keep local
-  // data fresh without ever overwriting unsynced local edits — see refreshFromRemote()).
+  // data fresh without ever overwriting unsynced local edits â€” see refreshFromRemote()).
   setInterval(() => { if(isOnline) refreshFromRemote(); }, 5 * 60 * 1000);
 })();
-</script>
-</body>
-</html>
+
