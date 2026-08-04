@@ -2,6 +2,12 @@ const API_BASE = "https://ejigbodata-backend.onrender.com/api";
 
 const API = {
 
+    // Expose configured base URL for other frontend layers (e.g., Sprint 4 sync).
+    base: API_BASE,
+    getBaseUrl() {
+        return API_BASE;
+    },
+
     // ==========================
     // WARD DATA
     // ==========================

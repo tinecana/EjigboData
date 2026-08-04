@@ -344,10 +344,16 @@ console.log("========== PWMS BUILD ==========");
 console.log("Build Time:", "2026-07-20 21:00");
 console.log("INDEX FILE CHECK");
 
+const API_BASE_FROM_CONFIG = (
+  (window.API && typeof window.API.getBaseUrl === "function" && window.API.getBaseUrl()) ||
+  (window.API && typeof window.API.base === "string" && window.API.base) ||
+  ""
+);
+
 const BACKEND_URL = (
   window.__PWMS_SMS_BACKEND_URL ||
   localStorage.getItem('pwms_sms_backend_url') ||
-  'http://localhost:3000'
+  (API_BASE_FROM_CONFIG ? API_BASE_FROM_CONFIG.replace(/\/api\/?$/, "") : window.location.origin)
 ).replace(/\/$/, '');
 
 const USE_SUPABASE = true;

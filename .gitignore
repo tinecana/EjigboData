@@ -11,3 +11,9 @@ backend/.env
 .DS_Store
 
 Thumbs.db
+
+# AI temporary debug files
+temp_*.js
+
+# AI debug folders
+AI_Debug_Backups/
