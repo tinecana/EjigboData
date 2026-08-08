@@ -550,7 +550,7 @@ function prepareEntityRecordForPersist(entityName, incoming, existingRecord = nu
     ...(existingRecord || {}),
     ...(incoming || {})
   };
-  const isUpdate = Boolean(existingRecord && (incoming && incoming.id && existingRecord.id === incoming.id) || (incoming && incoming.qrId && existingRecord.qrId === incoming.qrId));
+  const isUpdate = Boolean((existingRecord && incoming && incoming.id && existingRecord.id === incoming.id) || (existingRecord && incoming && incoming.qrId && existingRecord.qrId === incoming.qrId));
   const nextVersion = isUpdate ? (Number(existingRecord.version || 0) + 1) : (Number(base.version || existingRecord?.version || 0) || 1);
   return ensureRecordMetadata({
     ...base,
