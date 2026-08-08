@@ -39,7 +39,7 @@
  *    node sprint1_migrate.js
  * -------------------------------------------------------------------
  */
-
+require("dotenv").config();
 const { createClient } = require("@supabase/supabase-js");
 
 // ---- CONFIGURATION: point these at your real ward-JSON storage -----

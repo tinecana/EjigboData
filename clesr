@@ -1,0 +1,64 @@
+[1mdiff --git a/backend/routes/ward.js b/backend/routes/ward.js[m
+[1mdeleted file mode 100644[m
+[1mindex 0ccb4fa..0000000[m
+[1m--- a/backend/routes/ward.js[m
+[1m+++ /dev/null[m
+[36m@@ -1,57 +0,0 @@[m
+[31m-const express = require("express");[m
+[31m-[m
+[31m-module.exports = function (supabase) {[m
+[31m-[m
+[31m-    const router = express.Router();[m
+[31m-[m
+[31m-    // ==========================[m
+[31m-    // LOAD WARD[m
+[31m-    // ==========================[m
+[31m-    router.get("/:ward", async (req, res) => {[m
+[31m-[m
+[31m-        const ward = req.params.ward;[m
+[31m-[m
+[31m-        const { data, error } = await supabase[m
+[31m-            .from("ward_data")[m
+[31m-            .select("data")[m
+[31m-            .eq("ward", ward)[m
+[31m-            .maybeSingle();[m
+[31m-[m
+[31m-        if (error) {[m
+[31m-            return res.status(500).json({[m
+[31m-                ok: false,[m
+[31m-                error: error.message[m
+[31m-            });[m
+[31m-        }[m
+[31m-[m
+[31m-        res.json({[m
+[31m-            ok: true,[m
+[31m-            data: data?.data || {}[m
+[31m-        });[m
+[31m-[m
+[31m-    });[m
+[31m-[m
+[31m-    // ==========================[m
+[31m-    // SAVE WARD[m
+[31m-    // ==========================[m
+[31m-    [m
+[31m-    [m
+[31m-[m
+[31m-    [m
+[31m-        if (error) {[m
+[31m-            return res.status(500).json({[m
+[31m-                ok: false,[m
+[31m-                error: error.message[m
+[31m-            });[m
+[31m-        }[m
+[31m-[m
+[31m-        res.json({[m
+[31m-            ok: true,[m
+[31m-            message: "Ward data saved successfully."[m
+[31m-        });[m
+[31m-[m
+[31m-    });[m
+[31m-[m
+[31m-    return router;[m
+[31m-[m
+[31m-};[m
+\ No newline at end of file[m

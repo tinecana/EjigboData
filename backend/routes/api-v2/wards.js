@@ -5,5 +5,5 @@ module.exports = createCrudRouter("wards", {
   filterableFields: ["name"],
   searchableFields: ["name"],
   requiredOnCreate: ["name"],
-  writableFields: ["settings"]
+  writableFields: ["settings", "updated_by", "created_by", "device_id"]
 });

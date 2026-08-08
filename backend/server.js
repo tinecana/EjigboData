@@ -1,92 +1,26 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const express = require('express');
-const cors = require('cors');
-
+const express = require("express");
+const cors = require("cors");
 const supabase = require("./config/supabase");
 
 const app = express();
-
-const smsRoutes = require("./routes/api-v2/sms")();
-const wardRoutes = require("./routes/api-v2/ward")(supabase);
-const enterpriseRoutes = require("./routes/api-v2");
-
-// =====================
-// Middlewares
-// =====================
-app.use(cors({
-    origin: true,
-    credentials: true
-})); 
-app.use(express.json());
-
-// =====================
-// Routes
-// =====================
-app.use("/api/sms", smsRoutes);
-app.use("/api/ward", wardRoutes);
-app.use("/api/v2", enterpriseRoutes);
-
-// Root Route
-app.get("/", (req, res) => {
-    res.send("PWMS Backend Running");
-});
-
-// Backend Test
-app.get("/api/test", (req, res) => {
-    res.json({
-        ok: true,
-        message: "PWMS Backend Online"
-    });
-});
-
-// Health Check
-app.get("/health", (req, res) => {
-    res.json({
-        ok: true,
-        service: "PWMS Backend"
-    });
-});
-
-// Supabase Test
-app.get("/api/test-supabase", async (req, res) => {
-
-    try {
-
-        const { data, error } = await supabase
-            .from("ward_data")
-            .select("*")
-            .limit(1);
-
-        if (error) {
-            return res.status(500).json({
-                ok: false,
-                error: error.message
-            });
-        }
-
-        res.json({
-            ok: true,
-            connected: true,
-            data
-        });
-
-    } catch (err) {
-
-        res.status(500).json({
-            ok: false,
-            error: err.message
-        });
-
-    }
-
-});
-
-// =====================
-// Start Server
-// =====================
 const PORT = process.env.PORT || 3000;
 
+app.use(cors());
+app.use(express.json({ limit: "10mb" }));
+
+// Legacy ward blob storage (Sprint 1 Supabase path)
+app.use("/api/ward", require("./routes/api-v2/ward")(supabase));
+
+// SMS endpoint
+app.use("/api/sms", require("./routes/api-v2/sms")());
+
+// Enterprise PostgreSQL CRUD API (Sprint 2+)
+app.use("/api/v2", require("./routes/api-v2/index"));
+
+app.get("/health", (_req, res) => res.json({ ok: true }));
+
 app.listen(PORT, () => {
-    console.log(`Backend running on port ${PORT}`);
+  console.log(`[SERVER] PWMS backend running on port ${PORT}`);
 });

@@ -1895,6 +1895,7 @@ async function sendOrQueueRecordOperation(method, apiPath, entity, entityId, pay
   }
 
   enqueueRecord(method, apiPath, entity, entityId, payload);
+  if(isOnline) syncQueue();
 }
 
 async function loadDatabase() {
@@ -2469,11 +2470,11 @@ async function syncOperation(op){
   wardData.syncVersion = (Number(wardData.syncVersion || 0) + 1);
   wardData.lastSyncedAt = new Date().toISOString();
   wardData.deviceId = wardData.deviceId || getDeviceId();
-  wardData = normalizeWardData(wardData);
+  const normalizedWardData = normalizeWardData(wardData);
 
-  await window.API.saveWard(op.ward, wardData);
+  await window.API.saveWard(op.ward, normalizedWardData);
 
-  wardData.__lastSyncedRemoteUpdatedAt = wardData.updatedAt;
+  normalizedWardData.__lastSyncedRemoteUpdatedAt = normalizedWardData.updatedAt;
   localStorage.setItem(DATA_KEY, JSON.stringify(db));
 }
 
