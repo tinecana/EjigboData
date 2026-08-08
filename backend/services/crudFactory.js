@@ -27,11 +27,9 @@ const METADATA_COLUMNS = [
   "created_by",
   "updated_by",
   "device_id",
-  "sync_version",
   "last_synced_at",
   "deleted_at",
-  "deleted",
-  "is_deleted"
+  "deleted"
 ];
 
 function getBodyValue(body, columnName) {
